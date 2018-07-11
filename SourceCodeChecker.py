@@ -6,6 +6,12 @@ import codecs
 
 __CONFIG_ENCODE = "utf8"
 
+__CONFIG_TABS_ENABLED = True
+
+__CONFIG_ASCII_CHECKER = False
+
+__CONFIG_NEWLINE_CHARS = "\r\n"
+
 
 def main(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False):
     print("Directory: {}\n" \
@@ -27,7 +33,19 @@ def check_file(file_path):
     file = codecs.open(file_path, 'r', encoding=__CONFIG_ENCODE)
 
     check_encode(file)
-    check_tabs(file)
+    
+    if __CONFIG_ASCII_CHECKER:
+        check_ASCII(file)
+
+    file.seek(0)
+    check_newline(file)
+
+    file.seek(0)
+    if __CONFIG_TABS_ENABLED:
+        check_tabs(file)
+        
+    file.seek(0)
+    check_trailing_whitespace(file)
     
     file.close()
     
@@ -44,12 +62,42 @@ def check_encode(file):
         return False
 
 
+def check_ASCII(file):
+    for line in file.readlines():
+        for char in line:
+            if char > 127:
+                print("File corrupt! There is a non-ASCII character!")
+                return False    
+    return True
+
+
+def check_newline(file):
+    # Check every line has good newline? (and the last line too)
+    for line in file.readlines():
+        # Get last characters
+        last_chars = line[-len(__CONFIG_NEWLINE_CHARS) : ]
+        if last_chars != __CONFIG_NEWLINE_CHARS:
+            print("File corrupt! There is a wrong newline in the file!")
+            return False
+    return True
+
+
 def check_tabs(file):
     for line in file.readlines():
         if "\t" in line:
             print("File corrupt! There is a tabulator in the file!")
             return False
-    
+    return True
+
+
+def check_trailing_whitespace(file):
+    for line in file.readlines():
+        # Strip newline characters
+        line = line.rstrip(__CONFIG_NEWLINE_CHARS)
+        if line != line.rstrip():
+            print("File problem! There is trailing whitespace!")
+            return False
+    return True
 
 
 if __name__ == "__main__":
