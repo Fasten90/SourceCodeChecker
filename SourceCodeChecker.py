@@ -102,4 +102,4 @@ def check_trailing_whitespace(file):
 
 if __name__ == "__main__":
     # execute only if run as a script
-    main(dir_path="c:\\Engineer\\Projects\\EclipseWorkspace\\SourceCodeChecker\\test\\Src", dir_relative=False)
+    main(dir_path="test\\Src", dir_relative=True)
