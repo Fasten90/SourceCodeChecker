@@ -4,13 +4,16 @@ import glob
 import codecs
 
 
+# TODO: Make a config for set these
 __CONFIG_ENCODE = "utf8"
 
-__CONFIG_TABS_ENABLED = True
+__CONFIG_TABS_ENABLED = False
 
 __CONFIG_ASCII_CHECKER = False
 
 __CONFIG_NEWLINE_CHARS = "\r\n"
+
+__CONFIG_ENABLED_INDENT_NUM = 4
 
 
 def main(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False):
@@ -41,9 +44,13 @@ def check_file(file_path):
     check_newline(file)
 
     file.seek(0)
-    if __CONFIG_TABS_ENABLED:
+    if not __CONFIG_TABS_ENABLED:
         check_tabs(file)
-        
+
+    file.seek(0)
+    if not __CONFIG_TABS_ENABLED:
+        check_indent(file)
+
     file.seek(0)
     check_trailing_whitespace(file)
     
@@ -82,12 +89,24 @@ def check_newline(file):
     return True
 
 
+def correct_newline(file):
+    # TODO: Imlement it. Shall rewrite the file, or only replace?
+    pass
+
+
 def check_tabs(file):
     for line in file.readlines():
         if "\t" in line:
             print("File corrupt! There is a tabulator in the file!")
             return False
     return True
+
+
+def correct_tabs(file):
+    pass
+    # TODO: Implement:
+    # 1. replace tabs --> spaces
+    # 2. replace spaces --> tab, but only in leading
 
 
 def check_trailing_whitespace(file):
@@ -100,6 +119,20 @@ def check_trailing_whitespace(file):
     return True
 
 
+def check_indent(file):
+    # Indent is only interested in space-indented mode, not in tab mode
+    for line in file.readlines():
+        length_of_leading_spaces = len(line) - len(line.lstrip(' '))
+        if (length_of_leading_spaces % __CONFIG_ENABLED_INDENT_NUM) != 0:
+            print("File problem! Indent is wrong!")
+            return False
+    return True
+
+
 if __name__ == "__main__":
     # execute only if run as a script
     main(dir_path="test\\Src", dir_relative=True)
+
+
+# TODO: Unittest for TAB
+# TODO: Unittest for not tab (indent!)
