@@ -1,0 +1,1 @@
+/* Wrong newline, only LF */
