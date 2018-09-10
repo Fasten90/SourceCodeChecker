@@ -5,6 +5,7 @@ import codecs
 
 
 class FileIssue():
+    # Helper class for Issue administration
     def __init__(self, file_path, line_number, issue):
         self.__file_path = file_path
         self.__line_number = line_number
@@ -16,6 +17,9 @@ class FileIssue():
             self.__line_number,
             self.__issue
             ))
+    
+    def get_text(self):
+        return self.__issue
 
 
 class FileAnalysis():
@@ -81,6 +85,16 @@ class FileAnalysis():
     def print_issues(self):
         for issue in self.__issues:
             issue.print_issue()
+
+
+    def get_text_of_issues(self):
+        text = ""
+        for issue in self.__issues:
+            text += issue.get_text()
+        return text
+
+
+    # ----------------------------------------------------
 
 
     def check_ASCII(self):
