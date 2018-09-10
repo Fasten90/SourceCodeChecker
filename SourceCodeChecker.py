@@ -150,7 +150,7 @@ class FileAnalysis():
         return True
 
 
-def main(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False):
+def run_checker(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False):
     print("Directory: {}\n" \
           "File types: {}".format(
               dir_path, file_types))
@@ -167,7 +167,7 @@ def main(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mo
 
 if __name__ == "__main__":
     # execute only if run as a script
-    main(dir_path="test\\Src", dir_relative=True)
+    run_checker(dir_path="test\\Src", dir_relative=True)
 
 
 # TODO: Unittest for TAB
