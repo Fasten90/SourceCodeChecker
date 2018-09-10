@@ -134,12 +134,19 @@ class FileAnalysis():
 
 
     def check_indent(self):
-        # Indent is only interested in space-indented mode, not in tab mode
         for i, line in enumerate(self.__file):
-            length_of_leading_spaces = len(line) - len(line.lstrip(' '))
-            if (length_of_leading_spaces % self.__CONFIG_ENABLED_INDENT_NUM) != 0:
-                self.add_issue(i, "Indent is wrong!")
-                return False
+            if self.__CONFIG_TABS_ENABLED:
+                # Indent with tabs
+                line_free_tab = line.lstrip('\t')
+                if line_free_tab != line_free_tab.lstrip(' '):
+                    self.add_issue(i, "Indent is wrong! (Space after tab)")
+                    return False
+            else:
+                # Indent with spaces
+                length_of_leading_spaces = len(line) - len(line.lstrip(' '))
+                if (length_of_leading_spaces % self.__CONFIG_ENABLED_INDENT_NUM) != 0:
+                    self.add_issue(i, "Indent is wrong! (Wrong number of spaces)")
+                    return False
         return True
 
 
