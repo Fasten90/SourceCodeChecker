@@ -22,19 +22,19 @@ class FileAnalysis():
 
     # TODO: Make a config for set these
     __CONFIG_ENCODE = "utf8"
-    
+
     __CONFIG_TABS_ENABLED = False
-    
+
     __CONFIG_ASCII_CHECKER = False
-    
+
     __CONFIG_NEWLINE_CHARS = "\r\n"
-    
+
     __CONFIG_ENABLED_INDENT_NUM = 4
 
 
     def __init__(self, file_path):
         """ Read the file """
-        
+
         self.__file_path = file_path
         self.__issues = []
         self.__new_file = []
@@ -60,18 +60,18 @@ class FileAnalysis():
 
         if self.__CONFIG_ASCII_CHECKER:
             self.check_ASCII()
-    
+
         self.check_newline()
-    
+
         if not self.__CONFIG_TABS_ENABLED:
             self.check_tabs()
-    
+
         if not self.__CONFIG_TABS_ENABLED:
             self.check_indent()
-    
+
         self.check_trailing_whitespace()
-        
-    
+
+
     def add_issue(self, line_number, issue_text):
         self.__issues.append(FileIssue(self.__file_path,
                                     line_number,
@@ -88,10 +88,10 @@ class FileAnalysis():
             for char in line:
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
-                    return False    
+                    return False
         return True
-    
-    
+
+
     def check_newline(self):
         # Check every line has good newline? (and the last line too)
         for i, line in enumerate(self.__file):
@@ -101,28 +101,28 @@ class FileAnalysis():
                 self.add_issue(i, "There is a wrong newline in the file!")
                 return False
         return True
-    
-    
+
+
     def correct_newline(self):
         # TODO: Imlement it. Shall rewrite the file, or only replace?
         pass
-    
-    
+
+
     def check_tabs(self):
         for i, line in enumerate(self.__file):
             if "\t" in line:
                 self.add_issue(i, "There is a tabulator in the file!")
                 return False
         return True
-    
-    
+
+
     def correct_tabs(self):
         pass
         # TODO: Implement:
         # 1. replace tabs --> spaces
         # 2. replace spaces --> tab, but only in leading
-    
-    
+
+
     def check_trailing_whitespace(self):
         for i, line in enumerate(self.__file):
             # Strip newline characters
@@ -132,7 +132,7 @@ class FileAnalysis():
                 return False
         return True
 
-    
+
     def check_indent(self):
         # Indent is only interested in space-indented mode, not in tab mode
         for i, line in enumerate(self.__file):
