@@ -164,13 +164,19 @@ class FileAnalysis():
         return True
 
 
-def run_checker(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False):
+def run_checker(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False, recursive=True):
+    # TODO: Delete dir_relative
+    # TODO: Implement checks
+    # TODO: Implement change_mode
+
     print("Directory: {}\n" \
           "File types: {}".format(
               dir_path, file_types))
 
     # Walk directories
-    file_list = glob.glob(dir_path + "\\" + file_types)
+    # glob use:<path>\**\*.c, recursive=True for subdirectory discovery
+    patten = dir_path + "\\" + file_types
+    file_list = glob.glob(patten, recursive=recursive)
 
     # Check files
     for file_path in file_list:
@@ -181,7 +187,7 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.c", checks=[], ch
 
 if __name__ == "__main__":
     # execute only if run as a script
-    run_checker(dir_path="test\\Src", dir_relative=True)
+    run_checker(dir_path="test\\Src\\**", dir_relative=True, recursive=True)
 
 
 # TODO: Unittest for TAB
