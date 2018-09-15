@@ -33,7 +33,12 @@ class FileAnalysis():
 
     __CONFIG_NEWLINE_CHARS = "\r\n"
 
-    __CONFIG_ENABLED_INDENT_NUM = 4
+    __CONFIG_INDENT_SPACE_NUM = 4
+    
+    __CONFIG_TAB_SPACE_SIZE = 4
+    
+    # TODO: Add "until one error" / "check all file" mode
+    __CONFIG_UNTIL_FIRST_ERROR = False
 
 
     def __init__(self, file_path):
@@ -98,23 +103,31 @@ class FileAnalysis():
 
 
     def check_ASCII(self):
+        result = True
         for i, line in enumerate(self.__file):
             for char in line:
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
-                    return False
-        return True
+                    if self.__CONFIG_UNTIL_FIRST_ERROR:
+                        return False
+                    else:
+                        result = False
+        return result
 
 
     def check_newline(self):
         # Check every line has good newline? (and the last line too)
+        result = True
         for i, line in enumerate(self.__file):
             # Get last characters
             last_chars = line[-len(self.__CONFIG_NEWLINE_CHARS) : ]
             if last_chars != self.__CONFIG_NEWLINE_CHARS:
                 self.add_issue(i, "There is a wrong newline in the file!")
-                return False
-        return True
+                if self.__CONFIG_UNTIL_FIRST_ERROR:
+                    return False
+                else:
+                    result = False
+        return result
 
 
     def correct_newline(self):
@@ -123,11 +136,15 @@ class FileAnalysis():
 
 
     def check_tabs(self):
+        result = True
         for i, line in enumerate(self.__file):
             if "\t" in line:
                 self.add_issue(i, "There is a tabulator in the file!")
-                return False
-        return True
+                if self.__CONFIG_UNTIL_FIRST_ERROR:
+                    return False
+                else:
+                    result = False
+        return result
 
 
     def correct_tabs(self):
@@ -138,30 +155,41 @@ class FileAnalysis():
 
 
     def check_trailing_whitespace(self):
+        result = True
         for i, line in enumerate(self.__file):
             # Strip newline characters
             line = line.rstrip(self.__CONFIG_NEWLINE_CHARS)
             if line != line.rstrip():
                 self.add_issue(i, "There is trailing whitespace!")
-                return False
-        return True
+                if self.__CONFIG_UNTIL_FIRST_ERROR:
+                    return False
+                else:
+                    result = False
+        return result
 
 
     def check_indent(self):
+        result = True
         for i, line in enumerate(self.__file):
             if self.__CONFIG_TABS_ENABLED:
                 # Indent with tabs
                 line_free_tab = line.lstrip('\t')
                 if line_free_tab != line_free_tab.lstrip(' '):
                     self.add_issue(i, "Indent is wrong! (Space after tab)")
-                    return False
+                    if self.__CONFIG_UNTIL_FIRST_ERROR:
+                        return False
+                    else:
+                        result = False
             else:
                 # Indent with spaces
                 length_of_leading_spaces = len(line) - len(line.lstrip(' '))
-                if (length_of_leading_spaces % self.__CONFIG_ENABLED_INDENT_NUM) != 0:
+                if (length_of_leading_spaces % self.__CONFIG_INDENT_SPACE_NUM) != 0:
                     self.add_issue(i, "Indent is wrong! (Wrong number of spaces)")
-                    return False
-        return True
+                    if self.__CONFIG_UNTIL_FIRST_ERROR:
+                        return False
+                    else:
+                        result = False
+        return result
 
 
 def run_checker(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False, recursive=True):
