@@ -53,7 +53,7 @@ class FileAnalysis():
 
         self.__file_path = file_path
         self.__issues = []
-        self.__new_file = []
+        self.__new_file = ""
         self.__file = []
 
         print("Check file: {}".format(self.__file_path))
@@ -73,10 +73,13 @@ class FileAnalysis():
         
         
     def update_file(self):
-        file = codecs.open(self.__file_path, 'w', encoding=self.__CONFIG_ENCODE)
-        file.writelines(self.__file)
-        file.close() 
-        print("Updated file: {}".format(self.__file_path))
+        if self.__new_file != "":
+            file = codecs.open(self.__file_path, 'w', encoding=self.__CONFIG_ENCODE)
+            file.writelines(self.__new_file)
+            file.close() 
+            print("Updated file: {}".format(self.__file_path))
+        else:
+            print("Not need updated file: {}".format(self.__file_path))
 
 
     def analyze(self):
@@ -176,7 +179,7 @@ class FileAnalysis():
                 new_line = line.replace("\t", " " * self.__CONFIG_TAB_SPACE_SIZE)
                 self.add_issue(i, "Replaced tabulator(s) in the file!")
                 new_file.append(new_line)
-            self.__file = new_file
+            self.__new_file = new_file
                     
         # replace spaces --> tab, but only in leading --> It is indent problem
         
@@ -274,6 +277,8 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
         # Rewrite file
         if file_analysis.CONFIG_CORRECTION_ENABLED:
             file_analysis.update_file()
+    
+    print("Finished")
 
 
 if __name__ == "__main__":
