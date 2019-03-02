@@ -55,6 +55,8 @@ class FileAnalysis():
     __CONFIG_UNTIL_FIRST_ERROR = False
     
     CONFIG_CORRECTION_ENABLED = True
+    
+    __debug_enabled = True
 
 
     def __init__(self, file_path):
@@ -133,6 +135,11 @@ class FileAnalysis():
             text += issue.get_text()
         return text
 
+    # ----------------------------------------------------
+    
+    def debug_print_ok(self, line):
+        if self.__debug_enabled:
+            print(line)
 
     # ----------------------------------------------------
 
