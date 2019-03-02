@@ -48,7 +48,9 @@ class FileAnalysis():
     
     __CONFIG_CORRECTIZE_HEADER_ENABLED = False
     
-    __CONFIG_CORRECTIZE_INCLUDE_GUARD = True
+    __CONFIG_CORRECTIZE_INCLUDE_GUARD_ENABLED = False
+    
+    __CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = True
     
     
     __CONFIG_CREATOR = "Vizi Gabor"
@@ -119,9 +121,12 @@ class FileAnalysis():
             
         if self.__CONFIG_CORRECTIZE_HEADER_ENABLED:
             self.correctize_header_comment()
-            
-        if self.__CONFIG_CORRECTIZE_INCLUDE_GUARD:
+
+        if self.__CONFIG_CORRECTIZE_INCLUDE_GUARD_ENABLED:
             self.correctize_include_guard()
+
+        if self.__CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED:
+            self.correctize_doxygen_keywords()
 
 
     def add_issue(self, line_number, issue_text):
@@ -237,7 +242,6 @@ class FileAnalysis():
                 # Save new_line
                 new_file += new_line + self.__CONFIG_NEWLINE_CHARS
         """
-                
 
 
     def check_trailing_whitespace(self):
@@ -445,6 +449,31 @@ class FileAnalysis():
 
         else:
             self.debug_print_ok("{} file not checked with include guard".format(self.__file_path))
+    
+        
+    def correctize_doxygen_keywords(self):
+        
+        doxygen_keywords = [
+            # From to what
+            ("\\brief", "@brief"),
+            ("\\param", "@param"),
+            ("\\note", "@note"),
+            ("\\return", "@return"),
+            ("\\retval", "@retval"),
+            ("\\sa", "@sa")
+            ]
+
+        new_file = "".join(self.__file)
+
+        file_changed = False
+        for keyword_from, keyword_to in doxygen_keywords:
+            if keyword_from in new_file:
+                file_changed = True
+                new_file = new_file.replace(keyword_from, keyword_to)
+                
+        if file_changed:
+            print("{} file has changed by Doxygen keyword replace(s)".format(self.__file_path))
+            self.__new_file = new_file
 
 
 def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
