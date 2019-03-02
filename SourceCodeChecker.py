@@ -29,16 +29,22 @@ class FileAnalysis():
 
     __CONFIG_TABS_ENABLED = False
 
-    __CONFIG_ASCII_CHECKER = False
+    __CONFIG_ASCII_CHECKER_ENABLED = False
 
+    __CONFIG_NEWLINE_CHECKER_ENABLED = False
     __CONFIG_NEWLINE_CHARS = "\r\n"
 
     __CONFIG_INDENT_SPACE_NUM = 4
-    
+    __CONFIG_INDENT_CHECKER_IS_ENABLED = False
+
     __CONFIG_TAB_SPACE_SIZE = 4
+    
+    __CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = False
     
     # TODO: Add "until one error" / "check all file" mode
     __CONFIG_UNTIL_FIRST_ERROR = False
+    
+    CONFIG_CORRECTION_ENABLED = True
 
 
     def __init__(self, file_path):
@@ -49,10 +55,10 @@ class FileAnalysis():
         self.__new_file = []
         self.__file = []
 
-        print("Check file: {}".format(file_path))
+        print("Check file: {}".format(self.__file_path))
 
         #file = open(file_path,'rt')
-        file = codecs.open(file_path, 'r', encoding=self.__CONFIG_ENCODE)
+        file = codecs.open(self.__file_path, 'r', encoding=self.__CONFIG_ENCODE)
 
         # Read entire file
         try:
@@ -63,22 +69,35 @@ class FileAnalysis():
             self.add_issue(0, "Not {} encoded".format(self.__CONFIG_ENCODE))
 
         file.close()
+        
+        
+    def update_file(self):
+        file = codecs.open(self.__file_path, 'w', encoding=self.__CONFIG_ENCODE)
+        file.writelines(self.__file)
+        file.close() 
+        print("Updated file: {}".format(self.__file_path))
 
 
     def analyze(self):
 
-        if self.__CONFIG_ASCII_CHECKER:
+        if self.__CONFIG_ASCII_CHECKER_ENABLED:
             self.check_ASCII()
 
-        self.check_newline()
+        if self.__CONFIG_NEWLINE_CHECKER_ENABLED:
+            self.check_newline()
 
         if not self.__CONFIG_TABS_ENABLED:
-            self.check_tabs()
+            if self.CONFIG_CORRECTION_ENABLED:
+                self.correct_tabs()
+                # self.__file  changed!
+            else:
+                self.check_tabs()
 
-        if not self.__CONFIG_TABS_ENABLED:
+        if self.__CONFIG_INDENT_CHECKER_IS_ENABLED:
             self.check_indent()
 
-        self.check_trailing_whitespace()
+        if self.__CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED:
+            self.check_trailing_whitespace()
 
 
     def add_issue(self, line_number, issue_text):
@@ -148,10 +167,48 @@ class FileAnalysis():
 
 
     def correct_tabs(self):
-        pass
-        # TODO: Implement:
-        # 1. replace tabs --> spaces
-        # 2. replace spaces --> tab, but only in leading
+        # replace tabs --> spaces
+        mode = 1
+        if mode == 1:
+            new_file = []
+            for i, line in enumerate(self.__file):
+                new_line = line.replace("\t", " " * self.__CONFIG_TAB_SPACE_SIZE)
+                self.add_issue(i, "Replaced tabulator(s) in the file!")
+                new_file.append(new_line)
+            self.__file = new_file
+                    
+        # replace spaces --> tab, but only in leading --> It is indent problem
+        
+        """
+        if mode == 2:
+            new_file = ""
+            previous_line_tabs = []
+            for i, line in enumerate(self.__file):
+                # read line char by char
+                column = 0
+                new_line = ""
+                for j in range(0, len(line)):
+                    
+                    after_tab = False
+                    while line[j] == "\t":
+                        new_line += ' ' * self.__CONFIG_TAB_SPACE_SIZE
+                        column += self.__CONFIG_TAB_SPACE_SIZE
+                        j += 1
+                        after_tab = True
+                    # When we here, we are after the tab
+                    if after_tab:
+                        if j != len(line):
+                            # Check the column
+                            previous_line_tabs.append(j-1)
+                        else:
+                            # End of line
+                            break
+                    
+                        
+                # Save new_line
+                new_file += new_line + self.__CONFIG_NEWLINE_CHARS
+        """
+                
 
 
     def check_trailing_whitespace(self):
@@ -192,7 +249,7 @@ class FileAnalysis():
         return result
 
 
-def run_checker(dir_path=".", dir_relative=True, file_types="*.c", checks=[], change_mode=False, recursive=True):
+def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
     # TODO: Delete dir_relative
     # TODO: Implement checks
     # TODO: Implement change_mode
@@ -211,6 +268,11 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.c", checks=[], ch
         file_analysis = FileAnalysis(file_path)
         file_analysis.analyze()
         file_analysis.print_issues()
+        
+        # TODO: Move out from here
+        # Rewrite file
+        if file_analysis.CONFIG_CORRECTION_ENABLED:
+            file_analysis.update_file()
 
 
 if __name__ == "__main__":
