@@ -59,7 +59,7 @@ class FileAnalysis():
     
     CONFIG_CORRECTION_ENABLED = True
     
-    __debug_enabled = True
+    __debug_enabled = False
 
 
     def __init__(self, file_path):
@@ -93,7 +93,7 @@ class FileAnalysis():
             file.close() 
             print("Updated file: {}".format(self.__file_path))
         else:
-            print("Not need updated file: {}".format(self.__file_path))
+            self.debug_print_ok("Not need updated file: {}".format(self.__file_path))
 
 
     def analyze(self):
