@@ -28,6 +28,7 @@ class FileAnalysis():
     __CONFIG_ENCODE = "utf8"
 
     __CONFIG_TABS_ENABLED = False
+    __CONFIG_TABS_CHECKER_ENABLED = False
 
     __CONFIG_ASCII_CHECKER_ENABLED = False
 
@@ -86,7 +87,7 @@ class FileAnalysis():
         if self.__CONFIG_NEWLINE_CHECKER_ENABLED:
             self.check_newline()
 
-        if not self.__CONFIG_TABS_ENABLED:
+        if self.__CONFIG_TABS_CHECKER_ENABLED:
             if self.CONFIG_CORRECTION_ENABLED:
                 self.correct_tabs()
                 # self.__file  changed!
