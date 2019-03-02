@@ -398,7 +398,7 @@ class FileAnalysis():
             for i, line in enumerate(self.__file):
                 #new_line = line
                 if not expected_guard1_ok and "#ifndef" in line:
-                    if line == expected_guard1:
+                    if line == expected_guard1 + self.__CONFIG_NEWLINE_CHARS:
                         self.debug_print_ok("Guard1 was okay")
                     else:
                         # Replace
@@ -409,7 +409,7 @@ class FileAnalysis():
                     continue
                 
                 if not expected_guard2_ok and "#define" in line:
-                    if line == expected_guard2:
+                    if line == expected_guard2 + self.__CONFIG_NEWLINE_CHARS:
                         self.debug_print_ok("Guard2 was okay")
                     else:
                         # Replace
@@ -426,7 +426,7 @@ class FileAnalysis():
             # Finished, check the last line #endif
             if saved_last_line_index >= 0:
                 line = self.__file[saved_last_line_index]
-                if line == expected_guard3:
+                if line == expected_guard3 + self.__CONFIG_NEWLINE_CHARS:
                     self.debug_print_ok("Guard3 was okay")
                 else:
                     # Replace
