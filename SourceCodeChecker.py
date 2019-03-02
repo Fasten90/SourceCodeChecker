@@ -4,7 +4,8 @@ import glob
 import codecs
 import re
 from re import RegexFlag 
-        
+import os
+import copy        
 
 
 class FileIssue():
@@ -45,7 +46,9 @@ class FileAnalysis():
     
     __CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = False
     
-    __CONFIG_CORRECTIZE_HEADER_ENABLED = True
+    __CONFIG_CORRECTIZE_HEADER_ENABLED = False
+    
+    __CONFIG_CORRECTIZE_INCLUDE_GUARD = True
     
     
     __CONFIG_CREATOR = "Vizi Gabor"
@@ -116,6 +119,9 @@ class FileAnalysis():
             
         if self.__CONFIG_CORRECTIZE_HEADER_ENABLED:
             self.correctize_header_comment()
+            
+        if self.__CONFIG_CORRECTIZE_INCLUDE_GUARD:
+            self.correctize_include_guard()
 
 
     def add_issue(self, line_number, issue_text):
@@ -356,7 +362,89 @@ class FileAnalysis():
             
             #print(new_header)
             self.__new_file = new_header + full_file[pos:]
+            
+            
+    def correctize_include_guard(self):
+        
+        if self.__file_path.endswith(".h"):
+            print("{} file checked with include guard".format(self.__file_path))
+            
+            # Normalized file name
+            # TODO: Move to init
+            file_name = os.path.basename(self.__file_path)
+            file_name = file_name.split(".")[0]
+            
+            file_name = file_name.upper()
+            header_text =  "{}_H_".format(file_name)
+            
+            # #ifndef COMMON_HANDLER_SWWATCHDOG_H_
+            # #define COMMON_HANDLER_SWWATCHDOG_H_
+            # #endif /* COMMON_HANDLER_SWWATCHDOG_H_ */
+            
+            expected_guard1 = "#ifndef {}".format(header_text)
+            expected_guard2 = "#define {}".format(header_text)
+            expected_guard3 = "#endif /* {} */".format(header_text)
+            
+            expected_guard1_ok = False
+            expected_guard2_ok = False
+            expected_guard3_ok = False
+            
+            guard_changed = False
+            
+            new_file = "".join(self.__file)
+            
+            saved_last_line_index = -1
+            
+            for i, line in enumerate(self.__file):
+                #new_line = line
+                if not expected_guard1_ok and "#ifndef" in line:
+                    if line == expected_guard1:
+                        self.debug_print_ok("Guard1 was okay")
+                    else:
+                        # Replace
+                        new_file = new_file.replace(line, expected_guard1 + self.__CONFIG_NEWLINE_CHARS)
+                        guard_changed = True
+                        
+                    expected_guard1_ok = True
+                    continue
+                
+                if not expected_guard2_ok and "#define" in line:
+                    if line == expected_guard2:
+                        self.debug_print_ok("Guard2 was okay")
+                    else:
+                        # Replace
+                        new_file = new_file.replace(line, expected_guard2 + self.__CONFIG_NEWLINE_CHARS)
+                        guard_changed = True
+                        
+                    expected_guard2_ok = True
+                    continue
+                
+                if "#endif" in line:
+                    # #endif shall be checked only if it is the last
+                    saved_last_line_index = i
 
+            # Finished, check the last line #endif
+            if saved_last_line_index >= 0:
+                line = self.__file[saved_last_line_index]
+                if line == expected_guard3:
+                    self.debug_print_ok("Guard3 was okay")
+                else:
+                    # Replace
+                    new_file = new_file.replace(line, expected_guard3 + self.__CONFIG_NEWLINE_CHARS)
+                    guard_changed = True
+                    
+                expected_guard3_ok = True
+                
+            
+            if not (expected_guard1_ok and expected_guard2_ok and expected_guard3_ok):
+                print("ERROR! Include guard error!")
+
+            if guard_changed:
+                print("Include guards changed")
+                self.__new_file = new_file
+
+        else:
+            self.debug_print_ok("{} file not checked with include guard".format(self.__file_path))
 
 
 def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
