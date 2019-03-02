@@ -2,6 +2,9 @@
 
 import glob
 import codecs
+import re
+from re import RegexFlag 
+        
 
 
 class FileIssue():
@@ -41,6 +44,12 @@ class FileAnalysis():
     __CONFIG_TAB_SPACE_SIZE = 4
     
     __CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = False
+    
+    __CONFIG_CORRECTIZE_HEADER_ENABLED = True
+    
+    
+    __CONFIG_CREATOR = "Vizi Gabor"
+    __CONFIG_E_MAIL = "vizi.gabor90@gmail.com"
     
     # TODO: Add "until one error" / "check all file" mode
     __CONFIG_UNTIL_FIRST_ERROR = False
@@ -102,6 +111,9 @@ class FileAnalysis():
 
         if self.__CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED:
             self.check_trailing_whitespace()
+            
+        if self.__CONFIG_CORRECTIZE_HEADER_ENABLED:
+            self.correctize_header_comment()
 
 
     def add_issue(self, line_number, issue_text):
@@ -251,6 +263,93 @@ class FileAnalysis():
                     else:
                         result = False
         return result
+    
+    
+    def correctize_header_comment(self):
+        """
+        /*
+         *        Logic.c
+         *        Created on:        2017-06-23
+         *        Author:            Vizi Gabor
+         *        E-mail:            vizi.gabor90@gmail.com
+         *        Function:        Logical functions
+         *        Target:            STM32Fx
+         *        Version:        v1
+         *        Last modified:    2017-06-23
+         */
+        """
+        
+        full_file = "".join(self.__file)
+        #file_checking_part = "".join(self.__file[0:10])        
+
+        # https://regex101.com/
+        # Too long?
+        #header_regex = r'\/\*.*\s*\* *(?P<filename>[\w._]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- \/]*).*\s*\* *Target:\s*(?P<target>[\w\d]*).*\s*\* *.*\s*\* *.*\s*\* *\/'
+        #header_regex = r'\/\*.*\s*\* *(?P<filename>[\w.]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)'
+
+        #good_header_regex = r'\/\*.*\s*\* *(?P<filename>[\w.]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)\s*\*\/'
+        
+        header_regex = r'\/\*[^\*]*\* *(?P<filename>[\w.]*)[^\*]*\* *Created on: *(?P<created_date>[\d\-]*)[^\*]*\* [^\*]*\*[^\*]*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)[^*]*\*'
+
+        header_regex_compiled = re.compile(header_regex, RegexFlag.MULTILINE)
+        #good_header_regex_compiled = re.compile(good_header_regex, RegexFlag.MULTILINE)
+
+        """
+        result_good = good_header_regex_compiled.match(full_file)
+        if result_good is not None:
+            # Good header found!
+            print("{} file had good header".format(self.__file_path))
+            return
+        """
+
+        result = header_regex_compiled.match(full_file)
+
+        #print(result)
+
+        if result is None:
+            print("{} file has not header".format(self.__file_path))
+        else:
+
+            found_header = result.group(0)
+            
+            if full_file[len(found_header)] == '/':
+                # Finished header
+                # Good header found!
+                print("{} file had good header".format(self.__file_path))
+                return            
+            
+            print("{} file had header, tried change".format(self.__file_path))
+            
+            new_header_format = [ 
+                "/*",
+                " *    {filename}",
+                " *    Created on:   {created_date}",
+                " *    Author:       {creator}",
+                " *    E-mail:       {email}",
+                " *    Function:     {function}",
+                " *    Target:       {target}",
+                " */"
+            ]
+            new_header = ''.join((line + self.__CONFIG_NEWLINE_CHARS) for line in new_header_format)
+            new_header = new_header.rstrip(self.__CONFIG_NEWLINE_CHARS)  # delete last new chars
+            
+            new_header = new_header.format(
+                filename=result.group("filename"),
+                created_date=result.group("created_date"),
+                creator=self.__CONFIG_CREATOR,
+                email=self.__CONFIG_E_MAIL,
+                function=result.group("function"),
+                target=result.group("target")
+                )
+            
+            
+            #full_file = full_file.replace(found_header, new_header)
+            pos = full_file.find("*/")
+            pos += 2  # Because the "*/" length
+            
+            #print(new_header)
+            self.__new_file = new_header + full_file[pos:]
+
 
 
 def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
