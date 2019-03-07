@@ -50,7 +50,9 @@ class FileAnalysis():
     
     __CONFIG_CORRECTIZE_INCLUDE_GUARD = False
     
-    __CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = True
+    __CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
+
+    __CONFIG_RUN_REFACTOR = True
     
     
     __CONFIG_CREATOR = "Vizi Gabor"
@@ -127,6 +129,9 @@ class FileAnalysis():
 
         if self.__CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED:
             self.correctize_doxygen_keywords()
+            
+        if self.__CONFIG_RUN_REFACTOR:
+            self.refactor_macro()
 
 
     def add_issue(self, line_number, issue_text):
@@ -475,6 +480,22 @@ class FileAnalysis():
             print("{} file has changed by Doxygen keyword replace(s)".format(self.__file_path))
             self.__new_file = new_file
 
+            
+    def refactor_macro(self):
+        # Refactor
+        
+        full_file = "".join(self.__file)
+        
+        #myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
+        #print myRe.sub(r'\1"noversion"\3', val)
+        # \1 means: 1. group
+        regex_text_from = re.compile(r"([^_])MODULE_")
+        file_new = regex_text_from.sub(r'\1CONFIG_MODULE_', full_file)
+
+        if file_new != full_file:
+            self.__new_file = file_new
+        
+
 
 def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
     # TODO: Delete dir_relative
@@ -506,7 +527,7 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
 
 if __name__ == "__main__":
     # execute only if run as a script
-    run_checker(dir_path="test\\Src\\**", dir_relative=True, recursive=True)
+    run_checker(dir_path="Fasten\\**", dir_relative=True, recursive=True)
 
 
 # TODO: Unittest for TAB
