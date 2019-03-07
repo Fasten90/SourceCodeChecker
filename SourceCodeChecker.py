@@ -48,7 +48,7 @@ class FileAnalysis():
     
     __CONFIG_CORRECTIZE_HEADER_ENABLED = False
     
-    __CONFIG_CORRECTIZE_INCLUDE_GUARD_ENABLED = False
+    __CONFIG_CORRECTIZE_INCLUDE_GUARD = False
     
     __CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = True
     
@@ -61,7 +61,7 @@ class FileAnalysis():
     
     CONFIG_CORRECTION_ENABLED = True
     
-    __debug_enabled = False
+    __debug_enabled = True
 
 
     def __init__(self, file_path):
@@ -95,7 +95,7 @@ class FileAnalysis():
             file.close() 
             print("Updated file: {}".format(self.__file_path))
         else:
-            self.debug_print_ok("Not need updated file: {}".format(self.__file_path))
+            print("Not need updated file: {}".format(self.__file_path))
 
 
     def analyze(self):
@@ -121,8 +121,8 @@ class FileAnalysis():
             
         if self.__CONFIG_CORRECTIZE_HEADER_ENABLED:
             self.correctize_header_comment()
-
-        if self.__CONFIG_CORRECTIZE_INCLUDE_GUARD_ENABLED:
+            
+        if self.__CONFIG_CORRECTIZE_INCLUDE_GUARD:
             self.correctize_include_guard()
 
         if self.__CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED:
