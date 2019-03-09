@@ -31,6 +31,26 @@ class TestFileAnalysisClass(unittest.TestCase):
             assert test_name in issues.lower(), "{} test file has run in {} test, and generated issue: \"{}\"".format(file_path, test_name, issues)
             #print("{} test file has run successfully in {} test".format(file_path, test_name)) # Only for debug
 
+        
+    def test_refactor_notused_argument(self):
+        text = \
+        "(void)a;\r\n" \
+        "(void) a;\r\n" \
+        "(void)b_c;\r\n" \
+        "(void) b_c;\r\n" \
+        "\r\n" \
+        "// Do not replace these:\r\n" \
+        "blabla (void)a;\r\n"
+
+        file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
+        
+        file_analysis.refactor_macro()
+        
+        new_file = file_analysis.debug_get_new_file()
+        
+        print(new_file)
+
+
 
 if __name__ == '__main__':
     unittest.main()
