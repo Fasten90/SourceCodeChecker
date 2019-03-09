@@ -510,6 +510,14 @@ class FileAnalysis():
 
         # TODO: What sshall happend with "///<" ?
 
+        """
+        (void)argc;
+        -->
+        UNUSED_ARGUMENT()
+        """
+        regex_text_from = re.compile(r"^( *)\( *void *\) *([^;]*);", flags=RegexFlag.MULTILINE)
+        file_new = regex_text_from.sub(r'\1UNUSED_ARGUMENT(\2);', file_new)      
+
 
         # TODO:
         # bool --> bool_t
