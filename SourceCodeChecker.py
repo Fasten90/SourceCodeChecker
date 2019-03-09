@@ -486,9 +486,15 @@ class FileAnalysis():
         
         full_file = "".join(self.__file)
         
+        # Idea:
         #myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
         #print myRe.sub(r'\1"noversion"\3', val)
         # \1 means: 1. group
+
+        """
+        Change MODULE_DEFINES... --> to CONFIG_MODULE_DEFINES...
+        Reason: There are some BLABLA_MODULE_ defines, which shall not be changed! (see !!! _MODULE (before module))
+        """
         regex_text_from = re.compile(r"([^_])MODULE_")
         file_new = regex_text_from.sub(r'\1CONFIG_MODULE_', full_file)
 
@@ -500,8 +506,23 @@ class FileAnalysis():
         """
         regex_text_from = re.compile(r"\/\/[^\/\<]([^\r\n]+)")
         file_new = regex_text_from.sub(r'/* \1 */', file_new)
+
+
+        # TODO: What sshall happend with "///<" ?
+
+
+        # TODO:
+        # bool --> bool_t
+        # float --> float32_t
+        #regex_text_from
+        #file_new
+
+
         if file_new != full_file:
             self.__new_file = file_new
+            
+            
+# TODO: Add type checker
         
 
 
