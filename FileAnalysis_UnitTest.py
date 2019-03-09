@@ -31,6 +31,25 @@ class TestFileAnalysisClass(unittest.TestCase):
             assert test_name in issues.lower(), "{} test file has run in {} test, and generated issue: \"{}\"".format(file_path, test_name, issues)
             #print("{} test file has run successfully in {} test".format(file_path, test_name)) # Only for debug
 
+    
+    def test_refactor_comment(self):
+        text = \
+        "//blabla\r\n" \
+        "// blabla\r\n" \
+        "  //blabla\r\n" \
+        "  if (a) //blabla\r\n" \
+        "///< blabla\r\n"
+        
+        file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
+        
+        file_analysis.refactor_macro()
+        
+        new_file = file_analysis.debug_get_new_file()
+        
+        print(new_file)
+        
+        assert(new_file.count("/*") == 4)
+        
         
     def test_refactor_notused_argument(self):
         text = \
