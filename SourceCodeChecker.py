@@ -485,6 +485,7 @@ class FileAnalysis():
         # Refactor
         
         full_file = "".join(self.__file)
+        file_new = copy.copy(full_file)
         
         # Idea:
         #myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
@@ -497,7 +498,7 @@ class FileAnalysis():
         Reason: There are some BLABLA_MODULE_ defines, which shall not be changed! (see !!! _MODULE (before module))
         """
         regex_text_from = re.compile(r"([^_])MODULE_")
-        file_new = regex_text_from.sub(r'\1CONFIG_MODULE_', full_file)
+        file_new = regex_text_from.sub(r'\1CONFIG_MODULE_', file_new)
 
         
         """
