@@ -490,6 +490,7 @@ class FileAnalysis():
         #myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
         #print myRe.sub(r'\1"noversion"\3', val)
         # \1 means: 1. group
+        
 
         """
         Change MODULE_DEFINES... --> to CONFIG_MODULE_DEFINES...
@@ -508,7 +509,7 @@ class FileAnalysis():
         file_new = regex_text_from.sub(r'/* \1 */', file_new)
 
 
-        # TODO: What sshall happend with "///<" ?
+        # TODO: What shall happen with "///<" ?
 
         """
         (void)argc;
@@ -526,10 +527,11 @@ class FileAnalysis():
         #file_new
 
 
+        # Save if need
         if file_new != full_file:
             self.__new_file = file_new
-            
-            
+
+
 # TODO: Add type checker
         
 
