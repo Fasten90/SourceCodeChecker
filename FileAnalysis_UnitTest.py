@@ -49,6 +49,8 @@ class TestFileAnalysisClass(unittest.TestCase):
         new_file = file_analysis.debug_get_new_file()
         
         print(new_file)
+        
+        assert(new_file.count("UNUSED_ARGUMENT") == 4)
 
 
 
