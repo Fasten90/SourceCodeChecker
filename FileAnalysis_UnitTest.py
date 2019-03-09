@@ -42,7 +42,7 @@ class TestFileAnalysisClass(unittest.TestCase):
         
         file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
         
-        file_analysis.refactor_macro()
+        file_analysis.run_refactor()
         
         new_file = file_analysis.debug_get_new_file()
         
@@ -63,7 +63,7 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
         
-        file_analysis.refactor_macro()
+        file_analysis.run_refactor()
         
         new_file = file_analysis.debug_get_new_file()
         

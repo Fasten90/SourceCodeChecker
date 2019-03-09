@@ -136,7 +136,7 @@ class FileAnalysis():
             self.correctize_doxygen_keywords()
             
         if self.__CONFIG_RUN_REFACTOR:
-            self.refactor_macro()
+            self.run_refactor()
 
 
     def add_issue(self, line_number, issue_text):
@@ -490,8 +490,9 @@ class FileAnalysis():
             self.__new_file = new_file
 
             
-    def refactor_macro(self):
+    def run_refactor(self):
         # Refactor
+        # TODO: Make beautiful list handled refactor method
         
         full_file = "".join(self.__file)
         file_new = copy.copy(full_file)
