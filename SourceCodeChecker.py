@@ -492,6 +492,14 @@ class FileAnalysis():
         regex_text_from = re.compile(r"([^_])MODULE_")
         file_new = regex_text_from.sub(r'\1CONFIG_MODULE_', full_file)
 
+        
+        """
+        "// comment" --> /* comment */
+        But do not change: "///<"
+        And finished with // 
+        """
+        regex_text_from = re.compile(r"\/\/[^\/\<]([^\r\n]+)")
+        file_new = regex_text_from.sub(r'/* \1 */', file_new)
         if file_new != full_file:
             self.__new_file = file_new
         
