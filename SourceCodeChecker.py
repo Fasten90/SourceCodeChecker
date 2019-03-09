@@ -66,8 +66,13 @@ class FileAnalysis():
     __debug_enabled = True
 
 
-    def __init__(self, file_path):
+    def __init__(self, file_path, test_text=None):
         """ Read the file """
+
+        if not file_path:
+            print("Test mode")
+            self.__file = test_text
+            return
 
         self.__file_path = file_path
         self.__issues = []
@@ -159,6 +164,10 @@ class FileAnalysis():
 
     # ----------------------------------------------------
 
+    def debug_get_new_file(self):
+        return self.__new_file
+
+    # ----------------------------------------------------
 
     def check_ASCII(self):
         result = True
