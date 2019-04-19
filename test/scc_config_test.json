@@ -5,6 +5,7 @@
     "CONFIG_CORRECTIZE_HEADER_ENABLED": false,
     "CONFIG_CORRECTIZE_INCLUDE_GUARD": false,
     "CONFIG_CREATOR": "Vizi Gabor",
+    "CONFIG_EOF_MANDATORY_ENABLED": true,
     "CONFIG_ENCODE": "utf8",
     "CONFIG_E_MAIL": "vizi.gabor90@gmail.com",
     "CONFIG_INDENT_CHECKER_IS_ENABLED": true,

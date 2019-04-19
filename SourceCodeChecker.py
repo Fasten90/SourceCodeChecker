@@ -69,6 +69,8 @@ class FileAnalysisConfig():
 
         self.CONFIG_CORRECTION_ENABLED = True
 
+        self.CONFIG_EOF_MANDATORY_ENABLED = True
+
         self.debug_enabled = True
 
     def toJSON(self):
@@ -203,6 +205,9 @@ class FileAnalysis():
 
         if self.config.CONFIG_RUN_REFACTOR:
             self.run_refactor()
+
+        if self.config.CONFIG_EOF_MANDATORY_ENABLED:
+            self.correctize_EOF()
 
     def add_issue(self, line_number, issue_text):
         self.__issues.append(FileIssue(self.__file_path,
@@ -588,6 +593,16 @@ class FileAnalysis():
         if file_new != full_file:
             self.__new_file = file_new
 
+    def correctize_EOF(self):
+        full_file = "".join(self.__file)
+        last_chars = full_file[-len(self.config.CONFIG_NEWLINE_CHARS):]
+        if last_chars != self.config.CONFIG_NEWLINE_CHARS:
+            self.add_issue(0, "There is no correct EOF!")
+            if self.config.CONFIG_CORRECTION_ENABLED:
+                self.__new_file = full_file + self.config.CONFIG_NEWLINE_CHARS
+            return False
+
+        return True
 # TODO: Add type checker
 
 
