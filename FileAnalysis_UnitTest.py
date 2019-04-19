@@ -14,11 +14,9 @@ class TestFileAnalysisClass(unittest.TestCase):
         global CONFIG_FILE_NAME
         # Prepare the config
         original_config_name = SourceCodeChecker.CONFIG_FILE_NAME
-        # dir_path = os.path.dirname(os.path.realpath(__file__))
-        # test_config_name = os.path.join(dir_path, "test\\scc_config_test.json")
+
         test_config_name = "test\\scc_config_test.json"
-        # tempoary_configname = SourceCodeChecker._CONFIG_FILE_NAME
-        # os.rename(SourceCodeChecker._CONFIG_FILE_NAME, )
+
         SourceCodeChecker.CONFIG_FILE_NAME = test_config_name
 
         # Walk directories
@@ -45,6 +43,35 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         # End of test
         SourceCodeChecker.CONFIG_FILE_NAME = original_config_name
+
+    def test_default_config(self):
+        global CONFIG_FILE_NAME
+        # Prepare the config
+        original_config_name = SourceCodeChecker.CONFIG_FILE_NAME
+        temporary_configname = SourceCodeChecker.CONFIG_FILE_NAME + "_temp"
+
+        # Prepare: Delete the temp if need
+        if os.path.exists(temporary_configname):
+            os.remove(temporary_configname)
+
+        # Rename original if need
+        if os.path.exists(original_config_name):
+            os.rename(original_config_name, temporary_configname)
+
+        assert(not os.path.exists(original_config_name))
+
+        # SourceCodeChecker.CONFIG_FILE_NAME = temporary_configname
+        # make Analysis for checking, did it create the config?
+        SourceCodeChecker.FileAnalysis(None)
+
+        # Shall exists
+        assert(os.path.exists(original_config_name))
+
+        # Reset
+        if os.path.exists(temporary_configname):
+            os.remove(original_config_name)  # This is the default file. Could be deleted
+            os.rename(temporary_configname, original_config_name)
+        # End
 
     def test_refactor_comment(self):
         text = \
