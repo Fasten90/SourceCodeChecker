@@ -3,17 +3,17 @@
 import glob
 import codecs
 import re
-from re import RegexFlag 
+from re import RegexFlag
 import os
 import copy
-import json        
+import json
 from collections import namedtuple
-
 
 CONFIG_FILE_NAME = "scc_config.json"
 
 
 class FileIssue():
+
     # Helper class for Issue administration
     def __init__(self, file_path, line_number, issue):
         self.__file_path = file_path
@@ -26,70 +26,70 @@ class FileIssue():
             self.__line_number,
             self.__issue
             ))
-    
+
     def get_text(self):
         return self.__issue
 
 
 class FileAnalysisConfig():
-    
+
     def __init__(self):
-        
+
         # TODO: Make a config for set these
         self.CONFIG_ENCODE = "utf8"
-    
+
         self.CONFIG_TABS_ENABLED = False
         self.CONFIG_TABS_CHECKER_ENABLED = False
-    
+
         self.CONFIG_ASCII_CHECKER_ENABLED = False
-    
+
         self.CONFIG_NEWLINE_CHECKER_ENABLED = False
         self.CONFIG_NEWLINE_CHARS = "\r\n"
-    
+
         self.CONFIG_INDENT_SPACE_NUM = 4
         self.CONFIG_INDENT_CHECKER_IS_ENABLED = True
-    
+
         self.CONFIG_TAB_SPACE_SIZE = 4
-        
+
         self.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = False
-        
+
         self.CONFIG_CORRECTIZE_HEADER_ENABLED = False
-        
+
         self.CONFIG_CORRECTIZE_INCLUDE_GUARD = False
-        
+
         self.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
-    
+
         self.CONFIG_RUN_REFACTOR = True
-        
-        
+
         self.CONFIG_CREATOR = "Vizi Gabor"
         self.CONFIG_E_MAIL = "vizi.gabor90@gmail.com"
-        
+
         # TODO: Add "until one error" / "check all file" mode
         self.CONFIG_UNTIL_FIRST_ERROR = False
-        
+
         self.CONFIG_CORRECTION_ENABLED = True
-        
+
         self.debug_enabled = True
-    
+
     def toJSON(self):
-        #return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-        return json.dumps(self.__dict__, sort_keys=True, indent=4) 
+        # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self.__dict__, sort_keys=True, indent=4)
 
 
 class ConfigHandler():
+
     # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
     @staticmethod
     def toJSON(config):
-        #return json.dumps(config, default=lambda o: o.__dict__, sort_keys=True, indent=4) 
-        #return json.dumps(config, sort_keys=True, indent=4)
-        #return json.dumps(config, indent=4)
-        #return json.dumps(config.__dict__, indent=4)
+        # return json.dumps(config, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        # return json.dumps(config, sort_keys=True, indent=4)
+        # return json.dumps(config, indent=4)
+        # return json.dumps(config.__dict__, indent=4)
         pass
 
     @staticmethod
     def SaveToFile(config):
-        #config_json = ConfigHandler.toJSON(config)
+        # config_json = ConfigHandler.toJSON(config)
         config_json = config.toJSON()
         with open(CONFIG_FILE_NAME, "w") as file:
             file.write(config_json)
@@ -102,21 +102,21 @@ class ConfigHandler():
         global _CONFIG_FILE_NAME
         config = None
         print("Start load SCC config from {}".format(CONFIG_FILE_NAME))
-        #with open(_CONFIG_FILE_NAME, "r") as file:
+        # with open(_CONFIG_FILE_NAME, "r") as file:
         with open(CONFIG_FILE_NAME, "r") as file:
             config = file.read()
 
-        #self = json.loads(config)
+        # self = json.loads(config)
         config = json.loads(config, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
-        
+
         print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
-        
+
         return config
-        #o.__dict__ = config
-    
-        #obj2_dict = simplejson.loads(config)
-        #obj2 = MyCustom.from_json(obj2_dict)
-    
+        # o.__dict__ = config
+
+        # obj2_dict = simplejson.loads(config)
+        # obj2 = MyCustom.from_json(obj2_dict)
+
     @staticmethod
     def ConfigIsAvailable():
         return os.path.exists(CONFIG_FILE_NAME)
@@ -130,13 +130,12 @@ class FileAnalysis():
         # Create config
         # TODO: Read from json
         self.config = FileAnalysisConfig()
-        
+
         if ConfigHandler.ConfigIsAvailable():
             self.config = ConfigHandler.LoadFromFile()
         else:
             print("Create default config")
             ConfigHandler.SaveToFile(self.config)
-
 
         if not file_path:
             print("Test mode")
@@ -150,29 +149,27 @@ class FileAnalysis():
 
         print("Check file: {}".format(self.__file_path))
 
-        #file = open(file_path,'rt')
+        # file = open(file_path,'rt')
         file = codecs.open(self.__file_path, 'r', encoding=self.config.CONFIG_ENCODE)
 
         # Read entire file
         try:
             # This is an check for ENCODE
             self.__file = file.readlines()
-            #print("File encode is OK")
+            # print("File encode is OK")
         except:
             self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
 
         file.close()
-        
-        
+
     def update_file(self):
         if self.__new_file != "":
             file = codecs.open(self.__file_path, 'w', encoding=self.config.CONFIG_ENCODE)
             file.writelines(self.__new_file)
-            file.close() 
+            file.close()
             print("Updated file: {}".format(self.__file_path))
         else:
             print("Not need updated file: {}".format(self.__file_path))
-
 
     def analyze(self):
 
@@ -194,30 +191,27 @@ class FileAnalysis():
 
         if self.config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED:
             self.check_trailing_whitespace()
-            
+
         if self.config.CONFIG_CORRECTIZE_HEADER_ENABLED:
             self.correctize_header_comment()
-            
+
         if self.config.CONFIG_CORRECTIZE_INCLUDE_GUARD:
             self.correctize_include_guard()
 
         if self.config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED:
             self.correctize_doxygen_keywords()
-            
+
         if self.config.CONFIG_RUN_REFACTOR:
             self.run_refactor()
-
 
     def add_issue(self, line_number, issue_text):
         self.__issues.append(FileIssue(self.__file_path,
                                     line_number,
                                     issue_text))
 
-
     def print_issues(self):
         for issue in self.__issues:
             issue.print_issue()
-
 
     def get_text_of_issues(self):
         text = ""
@@ -226,7 +220,7 @@ class FileAnalysis():
         return text
 
     # ----------------------------------------------------
-    
+
     def debug_print_ok(self, line):
         if self.config.debug_enabled:
             print(line)
@@ -250,7 +244,6 @@ class FileAnalysis():
                         result = False
         return result
 
-
     def check_newline(self):
         # Check every line has good newline? (and the last line too)
         result = True
@@ -265,11 +258,9 @@ class FileAnalysis():
                     result = False
         return result
 
-
     def correct_newline(self):
         # TODO: Imlement it. Shall rewrite the file, or only replace?
         pass
-
 
     def check_tabs(self):
         result = True
@@ -282,7 +273,6 @@ class FileAnalysis():
                     result = False
         return result
 
-
     def correct_tabs(self):
         # replace tabs --> spaces
         mode = 1
@@ -293,9 +283,9 @@ class FileAnalysis():
                 self.add_issue(i, "Replaced tabulator(s) in the file!")
                 new_file.append(new_line)
             self.__new_file = new_file
-                    
+
         # replace spaces --> tab, but only in leading --> It is indent problem
-        
+
         """
         if mode == 2:
             new_file = ""
@@ -326,7 +316,6 @@ class FileAnalysis():
                 new_file += new_line + self.config.CONFIG_NEWLINE_CHARS
         """
 
-
     def check_trailing_whitespace(self):
         result = True
         for i, line in enumerate(self.__file):
@@ -339,7 +328,6 @@ class FileAnalysis():
                 else:
                     result = False
         return result
-
 
     def check_indent(self):
         result = True
@@ -363,8 +351,7 @@ class FileAnalysis():
                     else:
                         result = False
         return result
-    
-    
+
     def correctize_header_comment(self):
         """
         /*
@@ -378,21 +365,21 @@ class FileAnalysis():
          *        Last modified:    2017-06-23
          */
         """
-        
+
         full_file = "".join(self.__file)
-        #file_checking_part = "".join(self.__file[0:10])        
+        # file_checking_part = "".join(self.__file[0:10])
 
         # https://regex101.com/
         # Too long?
-        #header_regex = r'\/\*.*\s*\* *(?P<filename>[\w._]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- \/]*).*\s*\* *Target:\s*(?P<target>[\w\d]*).*\s*\* *.*\s*\* *.*\s*\* *\/'
-        #header_regex = r'\/\*.*\s*\* *(?P<filename>[\w.]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)'
+        # header_regex = r'\/\*.*\s*\* *(?P<filename>[\w._]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- \/]*).*\s*\* *Target:\s*(?P<target>[\w\d]*).*\s*\* *.*\s*\* *.*\s*\* *\/'
+        # header_regex = r'\/\*.*\s*\* *(?P<filename>[\w.]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)'
 
-        #good_header_regex = r'\/\*.*\s*\* *(?P<filename>[\w.]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)\s*\*\/'
-        
+        # good_header_regex = r'\/\*.*\s*\* *(?P<filename>[\w.]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)\s*\*\/'
+
         header_regex = r'\/\*[^\*]*\* *(?P<filename>[\w.]*)[^\*]*\* *Created on: *(?P<created_date>[\d\-]*)[^\*]*\* [^\*]*\*[^\*]*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)[^*]*\*'
 
         header_regex_compiled = re.compile(header_regex, RegexFlag.MULTILINE)
-        #good_header_regex_compiled = re.compile(good_header_regex, RegexFlag.MULTILINE)
+        # good_header_regex_compiled = re.compile(good_header_regex, RegexFlag.MULTILINE)
 
         """
         result_good = good_header_regex_compiled.match(full_file)
@@ -404,23 +391,23 @@ class FileAnalysis():
 
         result = header_regex_compiled.match(full_file)
 
-        #print(result)
+        # print(result)
 
         if result is None:
             print("{} file has not header".format(self.__file_path))
         else:
 
             found_header = result.group(0)
-            
+
             if full_file[len(found_header)] == '/':
                 # Finished header
                 # Good header found!
                 print("{} file had good header".format(self.__file_path))
-                return            
-            
+                return
+
             print("{} file had header, tried change".format(self.__file_path))
-            
-            new_header_format = [ 
+
+            new_header_format = [
                 "/*",
                 " *    {filename}",
                 " *    Created on:   {created_date}",
@@ -432,7 +419,7 @@ class FileAnalysis():
             ]
             new_header = ''.join((line + self.config.CONFIG_NEWLINE_CHARS) for line in new_header_format)
             new_header = new_header.rstrip(self.config.CONFIG_NEWLINE_CHARS)  # delete last new chars
-            
+
             new_header = new_header.format(
                 filename=result.group("filename"),
                 created_date=result.group("created_date"),
@@ -441,49 +428,47 @@ class FileAnalysis():
                 function=result.group("function"),
                 target=result.group("target")
                 )
-            
-            
-            #full_file = full_file.replace(found_header, new_header)
+
+            # full_file = full_file.replace(found_header, new_header)
             pos = full_file.find("*/")
             pos += 2  # Because the "*/" length
-            
-            #print(new_header)
+
+            # print(new_header)
             self.__new_file = new_header + full_file[pos:]
-            
-            
+
     def correctize_include_guard(self):
-        
+
         if self.__file_path.endswith(".h"):
             print("{} file checked with include guard".format(self.__file_path))
-            
+
             # Normalized file name
             # TODO: Move to init
             file_name = os.path.basename(self.__file_path)
             file_name = file_name.split(".")[0]
-            
+
             file_name = file_name.upper()
-            header_text =  "{}_H_".format(file_name)
-            
+            header_text = "{}_H_".format(file_name)
+
             # #ifndef COMMON_HANDLER_SWWATCHDOG_H_
             # #define COMMON_HANDLER_SWWATCHDOG_H_
             # #endif /* COMMON_HANDLER_SWWATCHDOG_H_ */
-            
+
             expected_guard1 = "#ifndef {}".format(header_text)
             expected_guard2 = "#define {}".format(header_text)
             expected_guard3 = "#endif /* {} */".format(header_text)
-            
+
             expected_guard1_ok = False
             expected_guard2_ok = False
             expected_guard3_ok = False
-            
+
             guard_changed = False
-            
+
             new_file = "".join(self.__file)
-            
+
             saved_last_line_index = -1
-            
+
             for i, line in enumerate(self.__file):
-                #new_line = line
+                # new_line = line
                 if not expected_guard1_ok and "#ifndef" in line:
                     if line == expected_guard1 + self.config.CONFIG_NEWLINE_CHARS:
                         self.debug_print_ok("Guard1 was okay")
@@ -491,10 +476,10 @@ class FileAnalysis():
                         # Replace
                         new_file = new_file.replace(line, expected_guard1 + self.config.CONFIG_NEWLINE_CHARS)
                         guard_changed = True
-                        
+
                     expected_guard1_ok = True
                     continue
-                
+
                 if not expected_guard2_ok and "#define" in line:
                     if line == expected_guard2 + self.config.CONFIG_NEWLINE_CHARS:
                         self.debug_print_ok("Guard2 was okay")
@@ -502,10 +487,10 @@ class FileAnalysis():
                         # Replace
                         new_file = new_file.replace(line, expected_guard2 + self.config.CONFIG_NEWLINE_CHARS)
                         guard_changed = True
-                        
+
                     expected_guard2_ok = True
                     continue
-                
+
                 if "#endif" in line:
                     # #endif shall be checked only if it is the last
                     saved_last_line_index = i
@@ -519,10 +504,9 @@ class FileAnalysis():
                     # Replace
                     new_file = new_file.replace(line, expected_guard3 + self.config.CONFIG_NEWLINE_CHARS)
                     guard_changed = True
-                    
+
                 expected_guard3_ok = True
-                
-            
+
             if not (expected_guard1_ok and expected_guard2_ok and expected_guard3_ok):
                 print("ERROR! Include guard error!")
 
@@ -532,10 +516,9 @@ class FileAnalysis():
 
         else:
             self.debug_print_ok("{} file not checked with include guard".format(self.__file_path))
-    
-        
+
     def correctize_doxygen_keywords(self):
-        
+
         doxygen_keywords = [
             # From to what
             ("\\brief", "@brief"),
@@ -553,24 +536,22 @@ class FileAnalysis():
             if keyword_from in new_file:
                 file_changed = True
                 new_file = new_file.replace(keyword_from, keyword_to)
-                
+
         if file_changed:
             print("{} file has changed by Doxygen keyword replace(s)".format(self.__file_path))
             self.__new_file = new_file
 
-            
     def run_refactor(self):
         # Refactor
         # TODO: Make beautiful list handled refactor method
-        
+
         full_file = "".join(self.__file)
         file_new = copy.copy(full_file)
-        
+
         # Idea:
-        #myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
-        #print myRe.sub(r'\1"noversion"\3', val)
+        # myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
+        # print myRe.sub(r'\1"noversion"\3', val)
         # \1 means: 1. group
-        
 
         """
         Change MODULE_DEFINES... --> to CONFIG_MODULE_DEFINES...
@@ -579,7 +560,6 @@ class FileAnalysis():
         regex_text_from = re.compile(r"([^_])MODULE_")
         file_new = regex_text_from.sub(r'\1CONFIG_MODULE_', file_new)
 
-        
         """
         "// comment" --> /* comment */
         But do not change: "///<"
@@ -587,7 +567,6 @@ class FileAnalysis():
         """
         regex_text_from = re.compile(r"\/\/[^\/\<]([^\r\n]+)")
         file_new = regex_text_from.sub(r'/* \1 */', file_new)
-
 
         # TODO: What shall happen with "///<" ?
 
@@ -597,23 +576,19 @@ class FileAnalysis():
         UNUSED_ARGUMENT()
         """
         regex_text_from = re.compile(r"^( *)\( *void *\) *([^;]*);", flags=RegexFlag.MULTILINE)
-        file_new = regex_text_from.sub(r'\1UNUSED_ARGUMENT(\2);', file_new)      
-
+        file_new = regex_text_from.sub(r'\1UNUSED_ARGUMENT(\2);', file_new)
 
         # TODO:
         # bool --> bool_t
         # float --> float32_t
-        #regex_text_from
-        #file_new
-
+        # regex_text_from
+        # file_new
 
         # Save if need
         if file_new != full_file:
             self.__new_file = file_new
 
-
 # TODO: Add type checker
-        
 
 
 def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
@@ -635,12 +610,12 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
         file_analysis = FileAnalysis(file_path)
         file_analysis.analyze()
         file_analysis.print_issues()
-        
+
         # TODO: Move out from here
         # Rewrite file
         if file_analysis.__CONFIG_CORRECTION_ENABLED:
             file_analysis.update_file()
-    
+
     print("Finished")
 
 
@@ -649,7 +624,6 @@ if __name__ == "__main__":
     # Test:
     FileAnalysis(file_path=None)
     run_checker(dir_path="Fasten\\**", dir_relative=True, recursive=True)
-
 
 # TODO: Unittest for TAB
 # TODO: Unittest for not tab (indent!)

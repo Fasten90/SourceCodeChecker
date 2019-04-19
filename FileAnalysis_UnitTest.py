@@ -14,11 +14,11 @@ class TestFileAnalysisClass(unittest.TestCase):
         global CONFIG_FILE_NAME
         # Prepare the config
         original_config_name = SourceCodeChecker.CONFIG_FILE_NAME
-        #dir_path = os.path.dirname(os.path.realpath(__file__))
-        #test_config_name = os.path.join(dir_path, "test\\scc_config_test.json")
+        # dir_path = os.path.dirname(os.path.realpath(__file__))
+        # test_config_name = os.path.join(dir_path, "test\\scc_config_test.json")
         test_config_name = "test\\scc_config_test.json"
-        #tempoary_configname = SourceCodeChecker._CONFIG_FILE_NAME
-        #os.rename(SourceCodeChecker._CONFIG_FILE_NAME, )
+        # tempoary_configname = SourceCodeChecker._CONFIG_FILE_NAME
+        # os.rename(SourceCodeChecker._CONFIG_FILE_NAME, )
         SourceCodeChecker.CONFIG_FILE_NAME = test_config_name
 
         # Walk directories
@@ -28,25 +28,24 @@ class TestFileAnalysisClass(unittest.TestCase):
         for file_path in file_list:
             file_analysis = SourceCodeChecker.FileAnalysis(file_path)
             file_analysis.analyze()
-            #file_analysis.print_issues() # Only for debug
+            # file_analysis.print_issues() # Only for debug
             issues = file_analysis.get_text_of_issues()
 
             # Create test name from file name
-            #file_path.split
+            # file_path.split
             test_file_name_start = "test\\Src\\test_"
             if file_path.startswith(test_file_name_start):
                 test_name = file_path[len(test_file_name_start):]
                 test_name = test_name.split('_')[0]
-                #print(test_name) # Only for debug
+                # print(test_name) # Only for debug
 
             # Check file name and issue is same?
             assert test_name in issues.lower(), "{} test file has run in {} test, and generated issue: \"{}\"".format(file_path, test_name, issues)
-            #print("{} test file has run successfully in {} test".format(file_path, test_name)) # Only for debug
+            # print("{} test file has run successfully in {} test".format(file_path, test_name)) # Only for debug
 
         # End of test
         SourceCodeChecker.CONFIG_FILE_NAME = original_config_name
 
-    
     def test_refactor_comment(self):
         text = \
         "//blabla\r\n" \
@@ -54,18 +53,17 @@ class TestFileAnalysisClass(unittest.TestCase):
         "  //blabla\r\n" \
         "  if (a) //blabla\r\n" \
         "///< blabla\r\n"
-        
+
         file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
-        
+
         file_analysis.run_refactor()
-        
+
         new_file = file_analysis.debug_get_new_file()
-        
+
         print(new_file)
-        
+
         assert(new_file.count("/*") == 4)
-        
-        
+
     def test_refactor_notused_argument(self):
         text = \
         "(void)a;\r\n" \
@@ -77,15 +75,14 @@ class TestFileAnalysisClass(unittest.TestCase):
         "blabla (void)a;\r\n"
 
         file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
-        
-        file_analysis.run_refactor()
-        
-        new_file = file_analysis.debug_get_new_file()
-        
-        print(new_file)
-        
-        assert(new_file.count("UNUSED_ARGUMENT") == 4)
 
+        file_analysis.run_refactor()
+
+        new_file = file_analysis.debug_get_new_file()
+
+        print(new_file)
+
+        assert(new_file.count("UNUSED_ARGUMENT") == 4)
 
 
 if __name__ == '__main__':
