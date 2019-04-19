@@ -117,6 +117,10 @@ class ConfigHandler():
     
         #obj2_dict = simplejson.loads(config)
         #obj2 = MyCustom.from_json(obj2_dict)
+    
+    @staticmethod
+    def ConfigIsAvailable():
+        return os.path.exists(_CONFIG_FILE_NAME)
 
 
 class FileAnalysis():
@@ -127,8 +131,13 @@ class FileAnalysis():
         # Create config
         # TODO: Read from json
         self.config = FileAnalysisConfig()
-        #ConfigHandler.SaveToFile(self.config)
-        self.config = ConfigHandler.LoadFromFile()
+        
+        if ConfigHandler.ConfigIsAvailable():
+            self.config = ConfigHandler.LoadFromFile()
+        else:
+            print("Create default config")
+            ConfigHandler.SaveToFile(self.config)
+
 
         if not file_path:
             print("Test mode")
