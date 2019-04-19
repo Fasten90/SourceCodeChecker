@@ -8,10 +8,9 @@ import os
 import copy
 import json        
 from collections import namedtuple
-from abc import ABC, abstractmethod
 
 
-_CONFIG_FILE_NAME = "scc_config.json"
+CONFIG_FILE_NAME = "scc_config.json"
 
 
 class FileIssue():
@@ -48,7 +47,7 @@ class FileAnalysisConfig():
         self.CONFIG_NEWLINE_CHARS = "\r\n"
     
         self.CONFIG_INDENT_SPACE_NUM = 4
-        self.CONFIG_INDENT_CHECKER_IS_ENABLED = False
+        self.CONFIG_INDENT_CHECKER_IS_ENABLED = True
     
         self.CONFIG_TAB_SPACE_SIZE = 4
         
@@ -92,9 +91,9 @@ class ConfigHandler():
     def SaveToFile(config):
         #config_json = ConfigHandler.toJSON(config)
         config_json = config.toJSON()
-        with open(_CONFIG_FILE_NAME, "w") as file:
+        with open(CONFIG_FILE_NAME, "w") as file:
             file.write(config_json)
-        print("Saved SCC config to {}".format(_CONFIG_FILE_NAME))
+        print("Saved SCC config to {}".format(CONFIG_FILE_NAME))
 
     # https://stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
     @staticmethod
@@ -102,15 +101,15 @@ class ConfigHandler():
         # Two-step loading
         global _CONFIG_FILE_NAME
         config = None
-        print("Start load SCC config from {}".format(_CONFIG_FILE_NAME))
+        print("Start load SCC config from {}".format(CONFIG_FILE_NAME))
         #with open(_CONFIG_FILE_NAME, "r") as file:
-        with open(_CONFIG_FILE_NAME, "r") as file:
+        with open(CONFIG_FILE_NAME, "r") as file:
             config = file.read()
 
         #self = json.loads(config)
         config = json.loads(config, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
         
-        print("Loaded SCC config from {}".format(_CONFIG_FILE_NAME))
+        print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
         
         return config
         #o.__dict__ = config
@@ -120,7 +119,7 @@ class ConfigHandler():
     
     @staticmethod
     def ConfigIsAvailable():
-        return os.path.exists(_CONFIG_FILE_NAME)
+        return os.path.exists(CONFIG_FILE_NAME)
 
 
 class FileAnalysis():
