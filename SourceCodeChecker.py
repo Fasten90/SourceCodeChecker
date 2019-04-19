@@ -5,7 +5,13 @@ import codecs
 import re
 from re import RegexFlag 
 import os
-import copy        
+import copy
+import json        
+from collections import namedtuple
+from abc import ABC, abstractmethod
+
+
+_CONFIG_FILE_NAME = "scc_config.json"
 
 
 class FileIssue():
@@ -26,48 +32,103 @@ class FileIssue():
         return self.__issue
 
 
+class FileAnalysisConfig():
+    
+    def __init__(self):
+        
+        # TODO: Make a config for set these
+        self.CONFIG_ENCODE = "utf8"
+    
+        self.CONFIG_TABS_ENABLED = False
+        self.CONFIG_TABS_CHECKER_ENABLED = False
+    
+        self.CONFIG_ASCII_CHECKER_ENABLED = False
+    
+        self.CONFIG_NEWLINE_CHECKER_ENABLED = False
+        self.CONFIG_NEWLINE_CHARS = "\r\n"
+    
+        self.CONFIG_INDENT_SPACE_NUM = 4
+        self.CONFIG_INDENT_CHECKER_IS_ENABLED = False
+    
+        self.CONFIG_TAB_SPACE_SIZE = 4
+        
+        self.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = False
+        
+        self.CONFIG_CORRECTIZE_HEADER_ENABLED = False
+        
+        self.CONFIG_CORRECTIZE_INCLUDE_GUARD = False
+        
+        self.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
+    
+        self.CONFIG_RUN_REFACTOR = True
+        
+        
+        self.CONFIG_CREATOR = "Vizi Gabor"
+        self.CONFIG_E_MAIL = "vizi.gabor90@gmail.com"
+        
+        # TODO: Add "until one error" / "check all file" mode
+        self.CONFIG_UNTIL_FIRST_ERROR = False
+        
+        self.CONFIG_CORRECTION_ENABLED = True
+        
+        self.debug_enabled = True
+    
+    def toJSON(self):
+        #return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self.__dict__, sort_keys=True, indent=4) 
+
+
+class ConfigHandler():
+    # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
+    @staticmethod
+    def toJSON(config):
+        #return json.dumps(config, default=lambda o: o.__dict__, sort_keys=True, indent=4) 
+        #return json.dumps(config, sort_keys=True, indent=4)
+        #return json.dumps(config, indent=4)
+        #return json.dumps(config.__dict__, indent=4)
+        pass
+
+    @staticmethod
+    def SaveToFile(config):
+        #config_json = ConfigHandler.toJSON(config)
+        config_json = config.toJSON()
+        with open(_CONFIG_FILE_NAME, "w") as file:
+            file.write(config_json)
+        print("Saved SCC config to {}".format(_CONFIG_FILE_NAME))
+
+    # https://stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
+    @staticmethod
+    def LoadFromFile():
+        # Two-step loading
+        global _CONFIG_FILE_NAME
+        config = None
+        print("Start load SCC config from {}".format(_CONFIG_FILE_NAME))
+        #with open(_CONFIG_FILE_NAME, "r") as file:
+        with open(_CONFIG_FILE_NAME, "r") as file:
+            config = file.read()
+
+        #self = json.loads(config)
+        config = json.loads(config, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+        
+        print("Loaded SCC config from {}".format(_CONFIG_FILE_NAME))
+        
+        return config
+        #o.__dict__ = config
+    
+        #obj2_dict = simplejson.loads(config)
+        #obj2 = MyCustom.from_json(obj2_dict)
+
+
 class FileAnalysis():
-
-    # TODO: Make a config for set these
-    __CONFIG_ENCODE = "utf8"
-
-    __CONFIG_TABS_ENABLED = False
-    __CONFIG_TABS_CHECKER_ENABLED = False
-
-    __CONFIG_ASCII_CHECKER_ENABLED = False
-
-    __CONFIG_NEWLINE_CHECKER_ENABLED = False
-    __CONFIG_NEWLINE_CHARS = "\r\n"
-
-    __CONFIG_INDENT_SPACE_NUM = 4
-    __CONFIG_INDENT_CHECKER_IS_ENABLED = False
-
-    __CONFIG_TAB_SPACE_SIZE = 4
-    
-    __CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = False
-    
-    __CONFIG_CORRECTIZE_HEADER_ENABLED = False
-    
-    __CONFIG_CORRECTIZE_INCLUDE_GUARD = False
-    
-    __CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
-
-    __CONFIG_RUN_REFACTOR = True
-    
-    
-    __CONFIG_CREATOR = "Vizi Gabor"
-    __CONFIG_E_MAIL = "vizi.gabor90@gmail.com"
-    
-    # TODO: Add "until one error" / "check all file" mode
-    __CONFIG_UNTIL_FIRST_ERROR = False
-    
-    CONFIG_CORRECTION_ENABLED = True
-    
-    __debug_enabled = True
-
 
     def __init__(self, file_path, test_text=None):
         """ Read the file """
+
+        # Create config
+        # TODO: Read from json
+        self.config = FileAnalysisConfig()
+        #ConfigHandler.SaveToFile(self.config)
+        self.config = ConfigHandler.LoadFromFile()
 
         if not file_path:
             print("Test mode")
@@ -82,7 +143,7 @@ class FileAnalysis():
         print("Check file: {}".format(self.__file_path))
 
         #file = open(file_path,'rt')
-        file = codecs.open(self.__file_path, 'r', encoding=self.__CONFIG_ENCODE)
+        file = codecs.open(self.__file_path, 'r', encoding=self.config.CONFIG_ENCODE)
 
         # Read entire file
         try:
@@ -90,14 +151,14 @@ class FileAnalysis():
             self.__file = file.readlines()
             #print("File encode is OK")
         except:
-            self.add_issue(0, "Not {} encoded".format(self.__CONFIG_ENCODE))
+            self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
 
         file.close()
         
         
     def update_file(self):
         if self.__new_file != "":
-            file = codecs.open(self.__file_path, 'w', encoding=self.__CONFIG_ENCODE)
+            file = codecs.open(self.__file_path, 'w', encoding=self.config.CONFIG_ENCODE)
             file.writelines(self.__new_file)
             file.close() 
             print("Updated file: {}".format(self.__file_path))
@@ -107,35 +168,35 @@ class FileAnalysis():
 
     def analyze(self):
 
-        if self.__CONFIG_ASCII_CHECKER_ENABLED:
+        if self.config.CONFIG_ASCII_CHECKER_ENABLED:
             self.check_ASCII()
 
-        if self.__CONFIG_NEWLINE_CHECKER_ENABLED:
+        if self.config.CONFIG_NEWLINE_CHECKER_ENABLED:
             self.check_newline()
 
-        if self.__CONFIG_TABS_CHECKER_ENABLED:
-            if self.CONFIG_CORRECTION_ENABLED:
+        if self.config.CONFIG_TABS_CHECKER_ENABLED:
+            if self.config.CONFIG_CORRECTION_ENABLED:
                 self.correct_tabs()
-                # self.__file  changed!
+                # self.config.file  changed!
             else:
                 self.check_tabs()
 
-        if self.__CONFIG_INDENT_CHECKER_IS_ENABLED:
+        if self.config.CONFIG_INDENT_CHECKER_IS_ENABLED:
             self.check_indent()
 
-        if self.__CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED:
+        if self.config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED:
             self.check_trailing_whitespace()
             
-        if self.__CONFIG_CORRECTIZE_HEADER_ENABLED:
+        if self.config.CONFIG_CORRECTIZE_HEADER_ENABLED:
             self.correctize_header_comment()
             
-        if self.__CONFIG_CORRECTIZE_INCLUDE_GUARD:
+        if self.config.CONFIG_CORRECTIZE_INCLUDE_GUARD:
             self.correctize_include_guard()
 
-        if self.__CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED:
+        if self.config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED:
             self.correctize_doxygen_keywords()
             
-        if self.__CONFIG_RUN_REFACTOR:
+        if self.config.CONFIG_RUN_REFACTOR:
             self.run_refactor()
 
 
@@ -159,7 +220,7 @@ class FileAnalysis():
     # ----------------------------------------------------
     
     def debug_print_ok(self, line):
-        if self.__debug_enabled:
+        if self.config.debug_enabled:
             print(line)
 
     # ----------------------------------------------------
@@ -175,7 +236,7 @@ class FileAnalysis():
             for char in line:
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
-                    if self.__CONFIG_UNTIL_FIRST_ERROR:
+                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
                         return False
                     else:
                         result = False
@@ -187,10 +248,10 @@ class FileAnalysis():
         result = True
         for i, line in enumerate(self.__file):
             # Get last characters
-            last_chars = line[-len(self.__CONFIG_NEWLINE_CHARS) : ]
-            if last_chars != self.__CONFIG_NEWLINE_CHARS:
+            last_chars = line[-len(self.config.CONFIG_NEWLINE_CHARS) : ]
+            if last_chars != self.config.CONFIG_NEWLINE_CHARS:
                 self.add_issue(i, "There is a wrong newline in the file!")
-                if self.__CONFIG_UNTIL_FIRST_ERROR:
+                if self.config.CONFIG_UNTIL_FIRST_ERROR:
                     return False
                 else:
                     result = False
@@ -207,7 +268,7 @@ class FileAnalysis():
         for i, line in enumerate(self.__file):
             if "\t" in line:
                 self.add_issue(i, "There is a tabulator in the file!")
-                if self.__CONFIG_UNTIL_FIRST_ERROR:
+                if self.config.CONFIG_UNTIL_FIRST_ERROR:
                     return False
                 else:
                     result = False
@@ -220,7 +281,7 @@ class FileAnalysis():
         if mode == 1:
             new_file = []
             for i, line in enumerate(self.__file):
-                new_line = line.replace("\t", " " * self.__CONFIG_TAB_SPACE_SIZE)
+                new_line = line.replace("\t", " " * self.config.CONFIG_TAB_SPACE_SIZE)
                 self.add_issue(i, "Replaced tabulator(s) in the file!")
                 new_file.append(new_line)
             self.__new_file = new_file
@@ -239,8 +300,8 @@ class FileAnalysis():
                     
                     after_tab = False
                     while line[j] == "\t":
-                        new_line += ' ' * self.__CONFIG_TAB_SPACE_SIZE
-                        column += self.__CONFIG_TAB_SPACE_SIZE
+                        new_line += ' ' * self.config.CONFIG_TAB_SPACE_SIZE
+                        column += self.config.CONFIG_TAB_SPACE_SIZE
                         j += 1
                         after_tab = True
                     # When we here, we are after the tab
@@ -254,7 +315,7 @@ class FileAnalysis():
                     
                         
                 # Save new_line
-                new_file += new_line + self.__CONFIG_NEWLINE_CHARS
+                new_file += new_line + self.config.CONFIG_NEWLINE_CHARS
         """
 
 
@@ -262,10 +323,10 @@ class FileAnalysis():
         result = True
         for i, line in enumerate(self.__file):
             # Strip newline characters
-            line = line.rstrip(self.__CONFIG_NEWLINE_CHARS)
+            line = line.rstrip(self.config.CONFIG_NEWLINE_CHARS)
             if line != line.rstrip():
                 self.add_issue(i, "There is trailing whitespace!")
-                if self.__CONFIG_UNTIL_FIRST_ERROR:
+                if self.config.CONFIG_UNTIL_FIRST_ERROR:
                     return False
                 else:
                     result = False
@@ -275,21 +336,21 @@ class FileAnalysis():
     def check_indent(self):
         result = True
         for i, line in enumerate(self.__file):
-            if self.__CONFIG_TABS_ENABLED:
+            if self.config.CONFIG_TABS_ENABLED:
                 # Indent with tabs
                 line_free_tab = line.lstrip('\t')
                 if line_free_tab != line_free_tab.lstrip(' '):
                     self.add_issue(i, "Indent is wrong! (Space after tab)")
-                    if self.__CONFIG_UNTIL_FIRST_ERROR:
+                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
                         return False
                     else:
                         result = False
             else:
                 # Indent with spaces
                 length_of_leading_spaces = len(line) - len(line.lstrip(' '))
-                if (length_of_leading_spaces % self.__CONFIG_INDENT_SPACE_NUM) != 0:
+                if (length_of_leading_spaces % self.config.CONFIG_INDENT_SPACE_NUM) != 0:
                     self.add_issue(i, "Indent is wrong! (Wrong number of spaces)")
-                    if self.__CONFIG_UNTIL_FIRST_ERROR:
+                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
                         return False
                     else:
                         result = False
@@ -361,14 +422,14 @@ class FileAnalysis():
                 " *    Target:       {target}",
                 " */"
             ]
-            new_header = ''.join((line + self.__CONFIG_NEWLINE_CHARS) for line in new_header_format)
-            new_header = new_header.rstrip(self.__CONFIG_NEWLINE_CHARS)  # delete last new chars
+            new_header = ''.join((line + self.config.CONFIG_NEWLINE_CHARS) for line in new_header_format)
+            new_header = new_header.rstrip(self.config.CONFIG_NEWLINE_CHARS)  # delete last new chars
             
             new_header = new_header.format(
                 filename=result.group("filename"),
                 created_date=result.group("created_date"),
-                creator=self.__CONFIG_CREATOR,
-                email=self.__CONFIG_E_MAIL,
+                creator=self.config.CONFIG_CREATOR,
+                email=self.config.CONFIG_E_MAIL,
                 function=result.group("function"),
                 target=result.group("target")
                 )
@@ -416,22 +477,22 @@ class FileAnalysis():
             for i, line in enumerate(self.__file):
                 #new_line = line
                 if not expected_guard1_ok and "#ifndef" in line:
-                    if line == expected_guard1 + self.__CONFIG_NEWLINE_CHARS:
+                    if line == expected_guard1 + self.config.CONFIG_NEWLINE_CHARS:
                         self.debug_print_ok("Guard1 was okay")
                     else:
                         # Replace
-                        new_file = new_file.replace(line, expected_guard1 + self.__CONFIG_NEWLINE_CHARS)
+                        new_file = new_file.replace(line, expected_guard1 + self.config.CONFIG_NEWLINE_CHARS)
                         guard_changed = True
                         
                     expected_guard1_ok = True
                     continue
                 
                 if not expected_guard2_ok and "#define" in line:
-                    if line == expected_guard2 + self.__CONFIG_NEWLINE_CHARS:
+                    if line == expected_guard2 + self.config.CONFIG_NEWLINE_CHARS:
                         self.debug_print_ok("Guard2 was okay")
                     else:
                         # Replace
-                        new_file = new_file.replace(line, expected_guard2 + self.__CONFIG_NEWLINE_CHARS)
+                        new_file = new_file.replace(line, expected_guard2 + self.config.CONFIG_NEWLINE_CHARS)
                         guard_changed = True
                         
                     expected_guard2_ok = True
@@ -444,11 +505,11 @@ class FileAnalysis():
             # Finished, check the last line #endif
             if saved_last_line_index >= 0:
                 line = self.__file[saved_last_line_index]
-                if line == expected_guard3 + self.__CONFIG_NEWLINE_CHARS:
+                if line == expected_guard3 + self.config.CONFIG_NEWLINE_CHARS:
                     self.debug_print_ok("Guard3 was okay")
                 else:
                     # Replace
-                    new_file = new_file.replace(line, expected_guard3 + self.__CONFIG_NEWLINE_CHARS)
+                    new_file = new_file.replace(line, expected_guard3 + self.config.CONFIG_NEWLINE_CHARS)
                     guard_changed = True
                     
                 expected_guard3_ok = True
@@ -569,7 +630,7 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
         
         # TODO: Move out from here
         # Rewrite file
-        if file_analysis.CONFIG_CORRECTION_ENABLED:
+        if file_analysis.__CONFIG_CORRECTION_ENABLED:
             file_analysis.update_file()
     
     print("Finished")
@@ -577,6 +638,8 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
 
 if __name__ == "__main__":
     # execute only if run as a script
+    # Test:
+    FileAnalysis(file_path=None)
     run_checker(dir_path="Fasten\\**", dir_relative=True, recursive=True)
 
 
