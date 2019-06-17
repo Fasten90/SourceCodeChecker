@@ -399,7 +399,9 @@ class FileAnalysis():
         # print(result)
 
         if result is None:
+
             print("{} file has not header".format(self.__file_path))
+            self.add_issue(0, "file has not header")
         else:
 
             found_header = result.group(0)
@@ -454,6 +456,7 @@ class FileAnalysis():
             file_name = file_name.upper()
             header_text = "{}_H_".format(file_name)
 
+            # Example for INCLUDE GUARD
             # #ifndef COMMON_HANDLER_SWWATCHDOG_H_
             # #define COMMON_HANDLER_SWWATCHDOG_H_
             # #endif /* COMMON_HANDLER_SWWATCHDOG_H_ */
@@ -481,6 +484,7 @@ class FileAnalysis():
                         # Replace
                         new_file = new_file.replace(line, expected_guard1 + self.config.CONFIG_NEWLINE_CHARS)
                         guard_changed = True
+                        self.add_issue(i, "Header guard was wrong - line:\"{}\"".format(line))
 
                     expected_guard1_ok = True
                     continue
@@ -492,6 +496,7 @@ class FileAnalysis():
                         # Replace
                         new_file = new_file.replace(line, expected_guard2 + self.config.CONFIG_NEWLINE_CHARS)
                         guard_changed = True
+                        self.add_issue(i, "Header guard was wrong - line:\"{}\"".format(line))
 
                     expected_guard2_ok = True
                     continue
@@ -511,16 +516,20 @@ class FileAnalysis():
                     guard_changed = True
 
                 expected_guard3_ok = True
+            else:
+                # Did not found last #endif
+                self.add_issue(-1, "Header guard was wrong - missing last #endif")
 
             if not (expected_guard1_ok and expected_guard2_ok and expected_guard3_ok):
                 print("ERROR! Include guard error!")
+                self.add_issue(-1, "Header guard was wrong")
 
             if guard_changed:
                 print("Include guards changed")
                 self.__new_file = new_file
 
         else:
-            self.debug_print_ok("{} file not checked with include guard".format(self.__file_path))
+            self.debug_print_ok("{} file not checked with include guard, because it is not header file".format(self.__file_path))
 
     def correctize_doxygen_keywords(self):
 
@@ -541,6 +550,7 @@ class FileAnalysis():
             if keyword_from in new_file:
                 file_changed = True
                 new_file = new_file.replace(keyword_from, keyword_to)
+                self.add_issue(-1, "Found \"{}\" doxygen keyword, which shall be replaced".format(keyword_from))
 
         if file_changed:
             print("{} file has changed by Doxygen keyword replace(s)".format(self.__file_path))
