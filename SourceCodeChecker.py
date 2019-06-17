@@ -43,7 +43,7 @@ class FileAnalysisConfig():
 
         self.CONFIG_ASCII_CHECKER_ENABLED = False
 
-        self.CONFIG_NEWLINE_CHECKER_ENABLED = False
+        self.CONFIG_NEWLINE_CHECKER_ENABLED = True
         self.CONFIG_NEWLINE_CHARS = "\r\n"
 
         self.CONFIG_INDENT_SPACE_NUM = 4
@@ -139,15 +139,25 @@ class FileAnalysis():
             print("Create default config")
             ConfigHandler.SaveToFile(self.config)
 
+        if not file_path and not test_text:
+            # Do nothing!
+            return
+
         if not file_path:
             print("Test mode")
-            self.__file = test_text
+            self.__file_content_string = test_text
+            self.__update_new_file()
             return
 
         self.__file_path = file_path
+
+        self.__file_content_string = []  # This will be loaded
+        self.__file_content_list = [()]  # This is from the loaded file
+        self.__full_file = ""  # This is from the loaded file
+
+        self.__new_file_string = ""  # This will be the updated file
+
         self.__issues = []
-        self.__new_file = ""
-        self.__file = []
 
         print("Check file: {}".format(self.__file_path))
 
@@ -157,57 +167,109 @@ class FileAnalysis():
         # Read entire file
         try:
             # This is an check for ENCODE
-            self.__file = file.readlines()
+            self.__file_content_string = file.readlines()
             # print("File encode is OK")
+            self.__file_content_list = enumerate(self.__file_content_string)
         except:
             self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
 
         file.close()
 
     def update_file(self):
-        if self.__new_file != "":
+        if self.__new_file_string != "":
+            self.__file_content_string = self.__new_file_string.splitlines()
             file = codecs.open(self.__file_path, 'w', encoding=self.config.CONFIG_ENCODE)
-            file.writelines(self.__new_file)
+            file.writelines(self.__new_file_string)
             file.close()
             print("Updated file: {}".format(self.__file_path))
         else:
             print("Not need updated file: {}".format(self.__file_path))
 
+    def __update_new_file(self):
+        self.__new_file_string = ""
+        # Update new_file
+        try:
+            self.__file_content_list = enumerate(self.__file_content_string)
+        except Exception as e:
+            print((str(e)))
+        self.__full_file = "".join(self.__file_content_string)
+
     def analyze(self):
 
-        if self.config.CONFIG_ASCII_CHECKER_ENABLED:
-            self.check_ASCII()
+        analyze_list = [
+            {
+                "name": "ASCII checker",
+                "config": self.config.CONFIG_ASCII_CHECKER_ENABLED,
+                "checker": self.check_ASCII
+            },
+            {
+                "name": "Newline checker",
+                "config": self.config.CONFIG_NEWLINE_CHECKER_ENABLED,
+                "checker": self.check_newline
+            },
+            {
+                "name": "Tabs checker",
+                "config": self.config.CONFIG_TABS_CHECKER_ENABLED,
+                "checker": self.check_tabs
+            },
+            {
+                "name": "Indent Checker",
+                "config": self.config.CONFIG_INDENT_CHECKER_IS_ENABLED,
+                "checker": self.check_indent
+            },
+            {
+                "name": "Trailing whitspace checker",
+                "config": self.config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED,
+                "checker": self.check_trailing_whitespace
+            },
+            {
+                "name": "Header comment checker",
+                "config": self.config.CONFIG_CORRECTIZE_HEADER_ENABLED,
+                "checker": self.correctize_header_comment
+            },
+            {
+                "name": "Include guard hecker",
+                "config": self.config.CONFIG_CORRECTIZE_INCLUDE_GUARD,
+                "checker": self.correctize_include_guard
+            },
+            {
+                "name": "Doxygen keywords checker",
+                "config": self.config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED,
+                "checker": self.correctize_doxygen_keywords
+            },
+            {
+                "name": "Refactor hecker",
+                "config": self.config.CONFIG_RUN_REFACTOR,
+                "checker": self.run_refactor
+            },
+            {
+                "name": "EOF hecker",
+                "config": self.config.CONFIG_EOF_MANDATORY_ENABLED,
+                "checker": self.correctize_EOF
+            },
 
-        if self.config.CONFIG_NEWLINE_CHECKER_ENABLED:
-            self.check_newline()
+            ]
 
-        if self.config.CONFIG_TABS_CHECKER_ENABLED:
+        # Check the list
+        for element in analyze_list:
+            assert("name" in element.keys())
+            assert("config" in element.keys())
+            assert("checker" in element.keys())
+
+        # Execute command
+        for element in analyze_list:
+            # Rewrite file
             if self.config.CONFIG_CORRECTION_ENABLED:
-                self.correct_tabs()
-                # self.config.file  changed!
-            else:
-                self.check_tabs()
+                self.__update_new_file()
 
-        if self.config.CONFIG_INDENT_CHECKER_IS_ENABLED:
-            self.check_indent()
+            # Execute
+            if element["config"]:
+                self.debug_print_ok("Run \"{}\" checker".format(element["name"]))
+                element["checker"]()
 
-        if self.config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED:
-            self.check_trailing_whitespace()
-
-        if self.config.CONFIG_CORRECTIZE_HEADER_ENABLED:
-            self.correctize_header_comment()
-
-        if self.config.CONFIG_CORRECTIZE_INCLUDE_GUARD:
-            self.correctize_include_guard()
-
-        if self.config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED:
-            self.correctize_doxygen_keywords()
-
-        if self.config.CONFIG_RUN_REFACTOR:
-            self.run_refactor()
-
-        if self.config.CONFIG_EOF_MANDATORY_ENABLED:
-            self.correctize_EOF()
+            # Rewrite file
+            if self.config.CONFIG_CORRECTION_ENABLED:
+                self.update_file()
 
     def add_issue(self, line_number, issue_text):
         self.__issues.append(FileIssue(self.__file_path,
@@ -233,17 +295,18 @@ class FileAnalysis():
     # ----------------------------------------------------
 
     def debug_get_new_file(self):
-        return self.__new_file
+        return self.__new_file_string
 
     # ----------------------------------------------------
 
     def check_ASCII(self):
         result = True
-        for i, line in enumerate(self.__file):
+        for i, line in self.__file_content_list:
             for char in line:
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
                     if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                        self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
                         return False
                     else:
                         result = False
@@ -252,7 +315,7 @@ class FileAnalysis():
     def check_newline(self):
         # Check every line has good newline? (and the last line too)
         result = True
-        for i, line in enumerate(self.__file):
+        for i, line in self.__file_content_list:
             # Get last characters
             last_chars = line[-len(self.config.CONFIG_NEWLINE_CHARS) : ]
             if last_chars != self.config.CONFIG_NEWLINE_CHARS:
@@ -268,62 +331,63 @@ class FileAnalysis():
         pass
 
     def check_tabs(self):
-        result = True
-        for i, line in enumerate(self.__file):
-            if "\t" in line:
-                self.add_issue(i, "There is a tabulator in the file!")
-                if self.config.CONFIG_UNTIL_FIRST_ERROR:
-                    return False
-                else:
-                    result = False
-        return result
 
-    def correct_tabs(self):
-        # replace tabs --> spaces
-        mode = 1
-        if mode == 1:
+        if not self.config.CONFIG_CORRECTION_ENABLED:
+            # Only checker, do not correct
+            result = True
+            for i, line in self.__file_content_list:
+                if "\t" in line:
+                    self.add_issue(i, "There is a tabulator in the file!")
+                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                        return False
+                    else:
+                        result = False
+            return result
+        else:
+            # Correct
+            # replace tabs --> spaces
             new_file = []
-            for i, line in enumerate(self.__file):
+            for i, line in self.__file_content_list:
                 new_line = line.replace("\t", " " * self.config.CONFIG_TAB_SPACE_SIZE)
                 self.add_issue(i, "Replaced tabulator(s) in the file!")
                 new_file.append(new_line)
-            self.__new_file = new_file
+            self.__new_file_string = new_file
 
-        # replace spaces --> tab, but only in leading --> It is indent problem
+            # replace spaces --> tab, but only in leading --> It is indent problem
 
-        """
-        if mode == 2:
-            new_file = ""
-            previous_line_tabs = []
-            for i, line in enumerate(self.__file):
-                # read line char by char
-                column = 0
-                new_line = ""
-                for j in range(0, len(line)):
-                    
-                    after_tab = False
-                    while line[j] == "\t":
-                        new_line += ' ' * self.config.CONFIG_TAB_SPACE_SIZE
-                        column += self.config.CONFIG_TAB_SPACE_SIZE
-                        j += 1
-                        after_tab = True
-                    # When we here, we are after the tab
-                    if after_tab:
-                        if j != len(line):
-                            # Check the column
-                            previous_line_tabs.append(j-1)
-                        else:
-                            # End of line
-                            break
-                    
+            """
+            if mode == 2:
+                new_file = ""
+                previous_line_tabs = []
+                for i, line in enumerate(self.__file_content_string):
+                    # read line char by char
+                    column = 0
+                    new_line = ""
+                    for j in range(0, len(line)):
                         
-                # Save new_line
-                new_file += new_line + self.config.CONFIG_NEWLINE_CHARS
-        """
+                        after_tab = False
+                        while line[j] == "\t":
+                            new_line += ' ' * self.config.CONFIG_TAB_SPACE_SIZE
+                            column += self.config.CONFIG_TAB_SPACE_SIZE
+                            j += 1
+                            after_tab = True
+                        # When we here, we are after the tab
+                        if after_tab:
+                            if j != len(line):
+                                # Check the column
+                                previous_line_tabs.append(j-1)
+                            else:
+                                # End of line
+                                break
+                        
+                            
+                    # Save new_line
+                    new_file += new_line + self.config.CONFIG_NEWLINE_CHARS
+            """
 
     def check_trailing_whitespace(self):
         result = True
-        for i, line in enumerate(self.__file):
+        for i, line in self.__file_content_list:
             # Strip newline characters
             line = line.rstrip(self.config.CONFIG_NEWLINE_CHARS)
             if line != line.rstrip():
@@ -336,7 +400,7 @@ class FileAnalysis():
 
     def check_indent(self):
         result = True
-        for i, line in enumerate(self.__file):
+        for i, line in self.__file_content_list:
             if self.config.CONFIG_TABS_ENABLED:
                 # Indent with tabs
                 line_free_tab = line.lstrip('\t')
@@ -371,8 +435,7 @@ class FileAnalysis():
          */
         """
 
-        full_file = "".join(self.__file)
-        # file_checking_part = "".join(self.__file[0:10])
+        # file_checking_part = "".join(self.__file_content_string[0:10])
 
         # https://regex101.com/
         # Too long?
@@ -394,7 +457,7 @@ class FileAnalysis():
             return
         """
 
-        result = header_regex_compiled.match(full_file)
+        result = header_regex_compiled.match(self.__full_file)
 
         # print(result)
 
@@ -406,7 +469,7 @@ class FileAnalysis():
 
             found_header = result.group(0)
 
-            if full_file[len(found_header)] == '/':
+            if self.__full_file[len(found_header)] == '/':
                 # Finished header
                 # Good header found!
                 print("{} file had good header".format(self.__file_path))
@@ -437,11 +500,11 @@ class FileAnalysis():
                 )
 
             # full_file = full_file.replace(found_header, new_header)
-            pos = full_file.find("*/")
+            pos = self.__full_file.find("*/")
             pos += 2  # Because the "*/" length
 
             # print(new_header)
-            self.__new_file = new_header + full_file[pos:]
+            self.__new_file_string = new_header + self.__full_file[pos:]
 
     def correctize_include_guard(self):
 
@@ -471,11 +534,11 @@ class FileAnalysis():
 
             guard_changed = False
 
-            new_file = "".join(self.__file)
+            new_file = "".join(self.__file_content_string)
 
             saved_last_line_index = -1
 
-            for i, line in enumerate(self.__file):
+            for i, line in enumerate(self.__file_content_string):
                 # new_line = line
                 if not expected_guard1_ok and "#ifndef" in line:
                     if line == expected_guard1 + self.config.CONFIG_NEWLINE_CHARS:
@@ -507,7 +570,7 @@ class FileAnalysis():
 
             # Finished, check the last line #endif
             if saved_last_line_index >= 0:
-                line = self.__file[saved_last_line_index]
+                line = self.__file_content_string[saved_last_line_index]
                 if line == expected_guard3 + self.config.CONFIG_NEWLINE_CHARS:
                     self.debug_print_ok("Guard3 was okay")
                 else:
@@ -526,7 +589,7 @@ class FileAnalysis():
 
             if guard_changed:
                 print("Include guards changed")
-                self.__new_file = new_file
+                self.__new_file_string = new_file
 
         else:
             self.debug_print_ok("{} file not checked with include guard, because it is not header file".format(self.__file_path))
@@ -543,7 +606,7 @@ class FileAnalysis():
             ("\\sa", "@sa")
             ]
 
-        new_file = "".join(self.__file)
+        new_file = "".join(self.__file_content_string)
 
         file_changed = False
         for keyword_from, keyword_to in doxygen_keywords:
@@ -554,14 +617,12 @@ class FileAnalysis():
 
         if file_changed:
             print("{} file has changed by Doxygen keyword replace(s)".format(self.__file_path))
-            self.__new_file = new_file
+            self.__new_file_string = new_file
 
     def run_refactor(self):
         # Refactor
         # TODO: Make beautiful list handled refactor method
-
-        full_file = "".join(self.__file)
-        file_new = copy.copy(full_file)
+        file_new = copy.copy(self.__full_file)
 
         # Idea:
         # myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
@@ -600,16 +661,15 @@ class FileAnalysis():
         # file_new
 
         # Save if need
-        if file_new != full_file:
-            self.__new_file = file_new
+        if file_new != self.__full_file:
+            self.__new_file_string = file_new
 
     def correctize_EOF(self):
-        full_file = "".join(self.__file)
-        last_chars = full_file[-len(self.config.CONFIG_NEWLINE_CHARS):]
+        last_chars = self.__full_file[-len(self.config.CONFIG_NEWLINE_CHARS):]
         if last_chars != self.config.CONFIG_NEWLINE_CHARS:
             self.add_issue(0, "There is no correct EOF!")
             if self.config.CONFIG_CORRECTION_ENABLED:
-                self.__new_file = full_file + self.config.CONFIG_NEWLINE_CHARS
+                self.__new_file_string = self.__full_file + self.config.CONFIG_NEWLINE_CHARS
             return False
 
         return True
@@ -635,11 +695,6 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
         file_analysis = FileAnalysis(file_path)
         file_analysis.analyze()
         file_analysis.print_issues()
-
-        # TODO: Move out from here
-        # Rewrite file
-        if file_analysis.__CONFIG_CORRECTION_ENABLED:
-            file_analysis.update_file()
 
     print("Finished")
 
