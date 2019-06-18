@@ -186,6 +186,7 @@ class FileAnalysis():
             # This is an check for ENCODE
             self.__file_content_string_list = file.readlines()
             # print("File encode is OK")
+            self.__update_new_file()
         except:
             self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
 
