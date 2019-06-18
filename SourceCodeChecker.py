@@ -192,6 +192,7 @@ class FileAnalysis():
             self.__file_content_list = enumerate(self.__file_content_string)
         except Exception as e:
             print((str(e)))
+            raise e
         self.__full_file = "".join(self.__file_content_string)
 
     def analyze(self):
