@@ -59,7 +59,9 @@ class FileAnalysisConfig():
 
         self.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
 
-        self.CONFIG_RUN_REFACTOR = True
+        self.CONFIG_RUN_REFACTOR_COMMENT_ENABLED = True
+
+        self.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED = True
 
         self.CONFIG_CREATOR = "Vizi Gabor"
         self.CONFIG_E_MAIL = "vizi.gabor90@gmail.com"
@@ -239,9 +241,14 @@ class FileAnalysis():
                 "checker": self.correctize_doxygen_keywords
             },
             {
-                "name": "Refactor hecker",
-                "config": self.config.CONFIG_RUN_REFACTOR,
-                "checker": self.run_refactor
+                "name": "Refactor hecker - Comment",
+                "config": self.config.CONFIG_RUN_REFACTOR_COMMENT_ENABLED,
+                "checker": self.run_refactor_comment
+            },
+            {
+                "name": "Refactor hecker - Unused argument",
+                "config": self.config.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED,
+                "checker": self.run_refactor_unused_argument
             },
             {
                 "name": "EOF hecker",
@@ -625,10 +632,8 @@ class FileAnalysis():
             print("{} file has changed by Doxygen keyword replace(s)".format(self.__file_path))
             self.__new_file_string = new_file
 
-    def run_refactor(self):
+    def run_refactor_comment(self):
         # Refactor
-        # TODO: Make beautiful list handled refactor method
-        file_new = copy.copy(self.__full_file)
 
         # Idea:
         # myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
@@ -640,7 +645,7 @@ class FileAnalysis():
         Reason: There are some BLABLA_MODULE_ defines, which shall not be changed! (see !!! _MODULE (before module))
         """
         regex_text_from = re.compile(r"([^_])MODULE_")
-        file_new = regex_text_from.sub(r'\1CONFIG_MODULE_', file_new)
+        self.__new_file_string = regex_text_from.sub(r'\1CONFIG_MODULE_', self.__full_file)
 
         """
         "// comment" --> /* comment */
@@ -648,27 +653,24 @@ class FileAnalysis():
         And finished with // 
         """
         regex_text_from = re.compile(r"\/\/[^\/\<]([^\r\n]+)")
-        file_new = regex_text_from.sub(r'/* \1 */', file_new)
+        self.__new_file_string = regex_text_from.sub(r'/* \1 */', self.__new_file_string)
 
         # TODO: What shall happen with "///<" ?
 
+    def run_refactor_unused_argument(self):
         """
         (void)argc;
         -->
         UNUSED_ARGUMENT()
         """
         regex_text_from = re.compile(r"^( *)\( *void *\) *([^;]*);", flags=RegexFlag.MULTILINE)
-        file_new = regex_text_from.sub(r'\1UNUSED_ARGUMENT(\2);', file_new)
+        self.__new_file_string = regex_text_from.sub(r'\1UNUSED_ARGUMENT(\2);', self.__full_file)
 
         # TODO:
         # bool --> bool_t
         # float --> float32_t
         # regex_text_from
         # file_new
-
-        # Save if need
-        if file_new != self.__full_file:
-            self.__new_file_string = file_new
 
     def correctize_EOF(self):
         last_chars = self.__full_file[-len(self.config.CONFIG_NEWLINE_CHARS):]

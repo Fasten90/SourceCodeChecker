@@ -50,7 +50,9 @@ class TestFileAnalysisClass(unittest.TestCase):
             issues = file_analysis.get_text_of_issues()
 
             # Create test name from file name
-            # file_path.split
+            # Test result compare method:
+            # 1. Check what there is after test_ --> test_name
+            # 2. Check test_name is in the issue list?
             test_file_name_start = sources_to + "test_"
             if file_path.startswith(test_file_name_start):
                 test_name = file_path[len(test_file_name_start):]
@@ -108,7 +110,7 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
 
-        file_analysis.run_refactor()
+        file_analysis.run_refactor_comment()
 
         new_file = file_analysis.debug_get_new_file()
 
@@ -128,7 +130,7 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
 
-        file_analysis.run_refactor()
+        file_analysis.run_refactor_unused_argument()
 
         new_file = file_analysis.debug_get_new_file()
 
