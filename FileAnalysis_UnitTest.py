@@ -3,8 +3,21 @@
 import unittest
 import glob
 import os
+import shutil
 
 import SourceCodeChecker
+
+
+def copytree(src, dst, symlinks=False, ignore=None):
+    # Solution from:
+    # https://stackoverflow.com/questions/1868714/how-do-i-copy-an-entire-directory-of-files-into-an-existing-directory-using-pyth
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, symlinks, ignore)
+        else:
+            shutil.copy2(s, d)
 
 
 class TestFileAnalysisClass(unittest.TestCase):
@@ -19,8 +32,15 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         SourceCodeChecker.CONFIG_FILE_NAME = test_config_name
 
+        sources_from = "test\\Src\\"
+        sources_to = "test\\TestSrc\\"
+        # Remove + Copy
+        if os.path.isdir(sources_to):
+            shutil.rmtree(sources_to)
+        copytree(sources_from, sources_to)
+
         # Walk directories
-        file_list = glob.glob("test\\Src\\*.c")
+        file_list = glob.glob(sources_to + "*.c")
 
         # Check test files
         for file_path in file_list:
@@ -31,14 +51,16 @@ class TestFileAnalysisClass(unittest.TestCase):
 
             # Create test name from file name
             # file_path.split
-            test_file_name_start = "test\\Src\\test_"
+            test_file_name_start = sources_to + "test_"
             if file_path.startswith(test_file_name_start):
                 test_name = file_path[len(test_file_name_start):]
                 test_name = test_name.split('_')[0].lower()
                 # print(test_name) # Only for debug
 
-            # Check file name and issue is same?
-            assert test_name in issues.lower(), "{} test file has run in \"{}\" test, and generated issue: \"{}\"".format(file_path, test_name, issues)
+                # Check file name and issue is same?
+                assert test_name in issues.lower(), "{} test file has run in \"{}\" test, and generated issue: \"{}\"".format(file_path, test_name, issues)
+            else:
+                print("WARNING! Wrong test file name: \"{}\"".format(file_path))
             # print("{} test file has run successfully in {} test".format(file_path, test_name)) # Only for debug
 
         # End of test
