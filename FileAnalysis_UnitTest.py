@@ -24,13 +24,7 @@ class TestFileAnalysisClass(unittest.TestCase):
 
     def test_checkers(self):
 
-        global CONFIG_FILE_NAME
-        # Prepare the config
-        original_config_name = SourceCodeChecker.CONFIG_FILE_NAME
-
-        test_config_name = "test\\scc_config_test.json"
-
-        SourceCodeChecker.CONFIG_FILE_NAME = test_config_name
+        SourceCodeChecker.LoadTestConfig()
 
         sources_from = "test\\Src\\"
         sources_to = "test\\TestSrc\\"
@@ -67,9 +61,6 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         print("Run {} tests".format(len(file_list)))
         print("".join("  {}\n".format(test) for test in file_list))
-
-        # End of test
-        SourceCodeChecker.CONFIG_FILE_NAME = original_config_name
 
     def test_default_config(self):
         global CONFIG_FILE_NAME

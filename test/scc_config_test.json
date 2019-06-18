@@ -19,5 +19,6 @@
     "CONFIG_TAB_SPACE_SIZE": 4,
     "CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED": true,
     "CONFIG_UNTIL_FIRST_ERROR": false,
+    "CONFIG_STATISTICS_ENABLED": true,
     "debug_enabled": true
 }
