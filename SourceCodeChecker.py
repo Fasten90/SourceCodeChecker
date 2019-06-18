@@ -244,12 +244,12 @@ class FileAnalysis():
                 "checker": self.check_tabs
             },
             {
-                "name": "Indent Checker",
+                "name": "Indent checker",
                 "config": self.config.CONFIG_INDENT_CHECKER_IS_ENABLED,
                 "checker": self.check_indent
             },
             {
-                "name": "Trailing whitspace checker",
+                "name": "Trailing whitespace checker",
                 "config": self.config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED,
                 "checker": self.check_trailing_whitespace
             },
