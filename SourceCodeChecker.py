@@ -693,7 +693,7 @@ class FileAnalysis():
         UNUSED_ARGUMENT(argc)
         """
         # Deleted: flags=RegexFlag.MULTILINE
-        regex_text_from = re.compile(r"^( *)\( *void *\) *([^;]*);")
+        regex_text_from = re.compile(r"^( *)\( *void *\) *([^;]*);", flags=RegexFlag.MULTILINE)
         # Save+restore the space before ( and and after ) and before ;
         self.__new_file_string = regex_text_from.sub(r'\1UNUSED_ARGUMENT(\2);', self.__file_content_full_string)
 
@@ -780,7 +780,7 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
 if __name__ == "__main__":
     # execute only if run as a script
     # Test:
-    FileAnalysis(file_path=None)
+    # FileAnalysis(file_path=None)
     run_checker(dir_path="test\\StatisticsTestProject\\**", dir_relative=True, recursive=True)
 
 # TODO: Unittest for TAB
