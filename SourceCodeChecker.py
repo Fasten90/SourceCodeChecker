@@ -783,7 +783,9 @@ if __name__ == "__main__":
     # execute only if run as a script
     # Test:
     # FileAnalysis(file_path=None)
-    run_checker(dir_path="test\\StatisticsTestProject\\**", dir_relative=True, recursive=True)
+    run_checker(dir_path="Src\\**", dir_relative=True, recursive=True)
+    run_checker(dir_path="Inc\\**", dir_relative=True, recursive=True)
+    #run_checker(dir_path="Drivers\\x86\\**", dir_relative=True, recursive=True)
 
 # TODO: Unittest for TAB
 # TODO: Unittest for not tab (indent!)
