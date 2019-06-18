@@ -208,7 +208,7 @@ class FileAnalysis():
             file.close()
             print("Updated file: {}".format(self.__file_path))
         else:
-            print("Not need updated file: {}".format(self.__file_path))
+            self.debug_print_ok("Not need updated file: {}".format(self.__file_path))
 
     def __update_new_file(self):
         self.__new_file_string = ""
@@ -216,7 +216,7 @@ class FileAnalysis():
         try:
             self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
         except Exception as e:
-            print((str(e)))
+            print(("ERROR! Problem with update new file! {}".format(str(e))))
             raise e
         self.__file_content_full_string = "".join(self.__file_content_string_list)
         # self.__file_content_full_string = "".join((line + self.config.CONFIG_NEWLINE_CHARS) for line in self.__file_content_string_list)
@@ -300,7 +300,11 @@ class FileAnalysis():
             # Execute
             if element["config"]:
                 self.debug_print_ok("Run \"{}\" checker".format(element["name"]))
-                element["checker"]()
+                try:
+                    element["checker"]()
+                except Exception as e:
+                    print("ERROR! Exception: {}".format(str(e)))
+                    pass
 
             # Rewrite file
             if self.config.CONFIG_CORRECTION_ENABLED:
@@ -682,8 +686,6 @@ class FileAnalysis():
         """
         regex_text_from = re.compile(r"\/\/[^\/\<]([^\r\n]+)")
         self.__new_file_string = regex_text_from.sub(r'/* \1 */', self.__file_content_full_string)
-
-        print(self.__new_file_string)
         # TODO: What shall happen with "///<" ?
 
     def run_refactor_unused_argument(self):
