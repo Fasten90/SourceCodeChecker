@@ -304,10 +304,15 @@ class FileAnalysis():
         result = True
         for i, line in self.__file_content_list:
             for char in line:
+                if isinstance(char, str):
+                    # char type is string --> problem
+                    self.add_issue(i, "There is a non-ASCII character!")
+                    continue
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
                     if self.config.CONFIG_UNTIL_FIRST_ERROR:
                         self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
+                        # TODO: Change the immediately return code
                         return False
                     else:
                         result = False
