@@ -63,6 +63,9 @@ class TestFileAnalysisClass(unittest.TestCase):
                 print("WARNING! Wrong test file name: \"{}\"".format(file_path))
             # print("{} test file has run successfully in {} test".format(file_path, test_name)) # Only for debug
 
+        print("Run {} tests".format(len(file_list)))
+        print("".join("  {}\n".format(test) for test in file_list))
+
         # End of test
         SourceCodeChecker.CONFIG_FILE_NAME = original_config_name
 
