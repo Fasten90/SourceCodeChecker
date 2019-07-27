@@ -200,10 +200,15 @@ class FileAnalysis():
 
     def update_changed_file(self):
         if self.__new_file_string != "":
-            # Note: be careful - hold the newlines!
-            self.__file_content_string_list = self.__new_file_string.splitlines(keepends=True)
-            # self.__file_content_string_list = []
-            # self.__file_content_string_list.append(line + self.config.CONFIG_NEWLINE_CHARS for line in self.__new_file_string.splitlines())
+            if isinstance(self.__new_file_string, (list)):
+                # List
+                self.__file_content_string_list = self.__new_file_string
+            else:
+                # Not list, normally it is string
+                # Note: be careful - hold the newlines!
+                self.__file_content_string_list = self.__new_file_string.splitlines(keepends=True)
+                # self.__file_content_string_list = []
+                # self.__file_content_string_list.append(line + self.config.CONFIG_NEWLINE_CHARS for line in self.__new_file_string.splitlines())
             file = codecs.open(self.__file_path, 'w', encoding=self.config.CONFIG_ENCODE)
             file.writelines(self.__new_file_string)
             file.close()
@@ -391,9 +396,11 @@ class FileAnalysis():
             # Correct
             # replace tabs --> spaces
             new_file = []
+            # TODO: Change to line replacer solution?
             for i, line in self.__file_content_enumerated_list:
                 new_line = line.replace("\t", " " * self.config.CONFIG_TAB_SPACE_SIZE)
-                self.add_issue(i, "Replaced tabulator(s) in the file!")
+                if new_line != line:
+                    self.add_issue(i, "Replaced tabulator(s) in the file!")
                 new_file.append(new_line)
             self.__new_file_string = new_file
 
@@ -697,9 +704,12 @@ class FileAnalysis():
                     new_line = regex_replace.sub(r"/* \1 */", line)
                     self.__file_content_string_list[i] = new_line
                     is_changed = True
+                    self.add_issue(i, "Comment has been replaced from\n"
+                                      "  \"{}\"\n"
+                                      "   to\n"
+                                      "   \"{}\"\n".format(line, new_line))
                 # Found, not full line: so wrong line
             # else, dont match. anything, so it is not comment line
-            # TODO: Report?
         if is_changed:
             self.__new_file_string = "".join(self.__file_content_string_list)
 
