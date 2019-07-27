@@ -92,12 +92,30 @@ class TestFileAnalysisClass(unittest.TestCase):
         # End
 
     def test_refactor_comment(self):
-        text = \
-        "//blabla\r\n" \
-        "// blabla\r\n" \
-        "  //blabla\r\n" \
-        "  if (a) //blabla\r\n" \
-        "///< blabla\r\n"
+        # TODO: List or full file?
+        text = [
+            "//blabla\r\n",
+            "// blabla\r\n",
+            "  //blabla\r\n",
+            "  if (a) //blabla\r\n",
+            "///< blabla\r\n"
+            "http://blabla.com\r\n",
+            " //* Blabla do not change me please\r\n",
+            " /* blabla please realize, this is trick inline comment in another comment//bla */\r\n",
+            " Please do not change me, I am link, http://blabla\r\n"
+        ]
+
+        text_expected_result = \
+"""/* blabla */
+/*  blabla */
+  /* blabla */
+  if (a) /* blabla */
+///< blabla
+http://blabla.com
+ //* Blabla do not change me please
+ /* blabla please realize, this is trick inline comment in another comment//bla */
+ Please do not change me, I am link, http://blabla
+"""
 
         file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
 
@@ -107,7 +125,9 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         print(new_file)
 
-        assert(new_file.count("/*") == 4)
+        # TODO: Old solution for test result checking, delete
+        #assert(new_file.count("/*") == 4)
+        self.assertEqual(text_expected_result.replace("\r","").replace("\n",""), new_file.replace("\r","").replace("\n",""))
 
     def test_refactor_notused_argument(self):
         text = \

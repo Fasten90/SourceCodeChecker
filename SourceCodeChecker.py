@@ -672,15 +672,42 @@ class FileAnalysis():
         # print myRe.sub(r'\1"noversion"\3', val)
         # \1 means: 1. group
 
+        # "// comment" --> /* comment */
+        # But do not change: "///<"
+        # And finished with //
+        # Tested with: https://regex101.com/
+        #                                 html - http*:*//
+        #                                 ˇ
+        #                                      //  normal line comment
+        #                                      ˇ
+        #                                              ///< or //* - do not catch
+        #                                              ˇ
 
-        """
-        "// comment" --> /* comment */
-        But do not change: "///<"
-        And finished with // 
-        """
-        regex_text_from = re.compile(r"\/\/[^\/\<]([^\r\n]+)")
-        self.__new_file_string = regex_text_from.sub(r'/* \1 */', self.__file_content_full_string)
+        # TODO: Delete
+        #regex_text_full_line = re.compile(r"([^:])+\/\/(([^\/\<\*])[^\r\n]+)")
+        regex_text_full_line = re.compile(r"([^\:\r\n\/\*]*)\/\/[^\/\<\*]([^\r\n]+)[\r\n]")
+        regex_replace = re.compile(r"\/\/([^\r\n]+)[\r\n]")
+        is_changed = False
+        for i, line in self.__file_content_enumerated_list:
+            result = regex_text_full_line.match(line)
+            if result != None:
+                if result.regs[0][0] == 0:  # This check: the full match is start with first character of line?
+                    # So, if regex found full line, we can replace:
+                    new_line = regex_replace.sub(r"/* \1 */", line)
+                    self.__file_content_string_list[i] = new_line
+                    is_changed = True
+                # Found, not full line: so wrong line
+            # else, dont match. anything, so it is not comment line
+            # TODO: Report?
+        if is_changed:
+            self.__new_file_string = "".join(self.__file_content_string_list)
+
+        # TODO: Remark, file is changed
+
         # TODO: What shall happen with "///<" ?
+        # TODO: Add test: //* ?
+        # TODO: Check: /* blabla //bla */
+        # TODO: Do not replace http://
 
     def run_refactor_unused_argument(self):
         """
