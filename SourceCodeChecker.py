@@ -214,6 +214,7 @@ class FileAnalysis():
     def __update_new_file(self):
         self.__new_file_string = ""
         # Update new_file
+        # TODO: It was extreme died idea, if we only could start with "string list". REFACTOR
         try:
             self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
         except Exception as e:
@@ -221,8 +222,6 @@ class FileAnalysis():
             raise e
         self.__file_content_full_string = "".join(self.__file_content_string_list)
         # self.__file_content_full_string = "".join((line + self.config.CONFIG_NEWLINE_CHARS) for line in self.__file_content_string_list)
-        if len(self.__file_content_string_list) == 1:
-            print("blabla")
         self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
 
     def analyze(self):
@@ -372,7 +371,7 @@ class FileAnalysis():
         return result
 
     def correct_newline(self):
-        # TODO: Imlement it. Shall rewrite the file, or only replace?
+        # TODO: Implement it. Shall rewrite the file, or only replace?
         pass
 
     def check_tabs(self):
@@ -442,6 +441,8 @@ class FileAnalysis():
                 else:
                     result = False
         return result
+
+    # TODO: Add remove trailing whitespace
 
     def check_indent(self):
         result = True
@@ -727,7 +728,7 @@ class FileAnalysis():
         # file_new
 
     def run_refactor_config_define(self):
-        # TODO: finish
+        # TODO: Implement
         """
         Change MODULE_DEFINES... --> to CONFIG_MODULE_DEFINES...
         Reason: There are some BLABLA_MODULE_ defines, which shall not be changed! (see !!! _MODULE (before module))
@@ -745,8 +746,11 @@ class FileAnalysis():
             return False
 
         return True
-# TODO: Add type checker
 
+
+    def type_checker(self):
+        # TODO: Add type checker
+        pass
 
 class Statistics():
     code_line_count = 0
