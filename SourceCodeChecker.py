@@ -672,13 +672,6 @@ class FileAnalysis():
         # print myRe.sub(r'\1"noversion"\3', val)
         # \1 means: 1. group
 
-        # TODO: Move out?
-        """
-        Change MODULE_DEFINES... --> to CONFIG_MODULE_DEFINES...
-        Reason: There are some BLABLA_MODULE_ defines, which shall not be changed! (see !!! _MODULE (before module))
-        """
-        # regex_text_from = re.compile(r"([^_])MODULE_")
-        # self.__new_file_string = regex_text_from.sub(r'\1CONFIG_MODULE_', self.__file_content_full_string)
 
         """
         "// comment" --> /* comment */
@@ -705,6 +698,16 @@ class FileAnalysis():
         # float --> float32_t
         # regex_text_from
         # file_new
+
+    def run_refactor_config_define(self):
+        # TODO: finish
+        """
+        Change MODULE_DEFINES... --> to CONFIG_MODULE_DEFINES...
+        Reason: There are some BLABLA_MODULE_ defines, which shall not be changed! (see !!! _MODULE (before module))
+        """
+        # regex_text_from = re.compile(r"([^_])MODULE_")
+        # self.__new_file_string = regex_text_from.sub(r'\1CONFIG_MODULE_', self.__file_content_full_string)
+        pass
 
     def correctize_EOF(self):
         last_chars = self.__file_content_full_string[-len(self.config.CONFIG_NEWLINE_CHARS):]
