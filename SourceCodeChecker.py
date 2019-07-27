@@ -349,8 +349,9 @@ class FileAnalysis():
             for char in line:
                 if isinstance(char, str):
                     # char type is string --> problem
-                    self.add_issue(i, "There is a non-ASCII character!")
+                    #self.add_issue(i, "There is a non-ASCII character!")
                     continue
+                    # TODO Debug..
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
                     if self.config.CONFIG_UNTIL_FIRST_ERROR:
