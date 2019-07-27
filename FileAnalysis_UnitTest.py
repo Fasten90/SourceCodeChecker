@@ -130,6 +130,8 @@ http://blabla.com
         self.assertEqual(text_expected_result.replace("\r","").replace("\n",""), new_file.replace("\r","").replace("\n",""))
 
     def test_refactor_notused_argument(self):
+
+        # TODO: Change to multiline string
         text = \
         "(void)a;\r\n" \
         "(void) a;\r\n" \
