@@ -829,9 +829,12 @@ if __name__ == "__main__":
     # execute only if run as a script
     # Test:
     # FileAnalysis(file_path=None)
-    run_checker(dir_path="..\\..\AtollicWorkspace\\FastenHomeAut\\Src\\**", dir_relative=True, recursive=True)
-    run_checker(dir_path="..\\..\AtollicWorkspace\\FastenHomeAut\\Inc\\**", dir_relative=True, recursive=True)
-    # run_checker(dir_path="Drivers\\x86\\**", dir_relative=True, recursive=True)
+    # TODO: Add deeper wrapper for more directories
+    #global CONFIG_FILE_NAME
+    CONFIG_FILE_NAME = "..\\..\\AtollicWorkspace\\FastenHomeAut\\scc_config.json"
+    run_checker(dir_path="..\\..\\AtollicWorkspace\\FastenHomeAut\\Src\\**", dir_relative=True, recursive=True)
+    run_checker(dir_path="..\\..\\AtollicWorkspace\\FastenHomeAut\\Inc\\**", dir_relative=True, recursive=True)
+    run_checker(dir_path="..\\..\\AtollicWorkspace\\FastenHomeAut\\Drivers\\x86\\**", dir_relative=True, recursive=True)
 
 # TODO: Unittest for TAB
 # TODO: Unittest for not tab (indent!)
