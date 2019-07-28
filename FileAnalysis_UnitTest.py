@@ -51,7 +51,7 @@ class TestFileAnalysisClass(unittest.TestCase):
             # Test result compare method:
             # 1. Check what there is after test_ --> test_name
             # 2. Check test_name is in the issue list?
-            test_file_name_start = os.path.join(sources_to,"test_")
+            test_file_name_start = os.path.join(sources_to, "test_")
             if file_path.startswith(test_file_name_start):
                 test_name = file_path[len(test_file_name_start):]
                 test_name = test_name.split('_')[0].lower()
