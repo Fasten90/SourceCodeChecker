@@ -1,0 +1,39 @@
+# This is a sample build configuration for C++ – Make.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+#image: gcc:6.1
+
+# Help:
+# https://confluence.atlassian.com/bitbucket/python-with-bitbucket-pipelines-873891271.html
+
+# Validator:
+# https://bitbucket-pipelines.prod.public.atl-paas.net/validator
+
+# This is a Python test pipeline for SourceCodeChecker
+
+image: python:3.7.2
+pipelines:
+  default:
+    - step:
+        script:
+          - echo 'Start pipeline'
+          
+          # Print the Linux version.
+          - uname -a
+          
+          - python --version
+          
+          - pip install -r requirements.txt
+          
+          #- python -m unittest discover tests/
+          - python -m unittest FileAnalysis_UnitTest.py
+
+          # TODO: Review
+          #- cd $BITBUCKET_CLONE_DIR
+          - echo 'List actual directory'
+          - pwd
+          # Win: cd
+          - ls
+
