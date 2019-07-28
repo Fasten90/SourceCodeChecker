@@ -157,8 +157,8 @@ http://blabla.com
 
     def test_statistics(self):
         SourceCodeChecker.run_checker(dir_path="test\\StatisticsTestProject\\**", dir_relative=True, recursive=True)
-
-        assert(SourceCodeChecker.STATISTICS_DATA.code_line_count == 30)
+        # 10 + 20 line count in the file
+        self.assertEquals(30, SourceCodeChecker.STATISTICS_DATA.code_line_count)
 
 
 if __name__ == '__main__':
