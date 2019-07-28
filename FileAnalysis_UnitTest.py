@@ -156,7 +156,7 @@ http://blabla.com
         assert(new_file.count("UNUSED_ARGUMENT") == 4)
 
     def test_statistics(self):
-        test_statistics_file_path = "test/StatisticsTestProject/**"
+        test_statistics_file_path = "test" + os.sep + "StatisticsTestProject" + os.sep
         SourceCodeChecker.run_checker(dir_path=test_statistics_file_path, dir_relative=True, recursive=True)
         # 10 + 20 line count in the file
         self.assertEqual(30, SourceCodeChecker.STATISTICS_DATA.code_line_count)
