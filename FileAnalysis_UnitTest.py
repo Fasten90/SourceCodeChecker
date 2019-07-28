@@ -26,11 +26,15 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         SourceCodeChecker.LoadTestConfig()
 
+        # Copy the test files, because it will be changed
         sources_from = "test/Src/"
         sources_to = "test/TestSrc/"
         # Remove + Copy
         if os.path.isdir(sources_to):
             shutil.rmtree(sources_to)
+        # Create
+        os.mkdir(sources_to)
+        # Copy
         copytree(sources_from, sources_to)
 
         # Walk directories
