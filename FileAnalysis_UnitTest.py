@@ -156,11 +156,20 @@ http://blabla.com
         assert(new_file.count("UNUSED_ARGUMENT") == 4)
 
     def test_statistics(self):
+
+        # Save + set config
+        global CONFIG_FILE_NAME
+        original_config_file_name = SourceCodeChecker.CONFIG_FILE_NAME
+        SourceCodeChecker.CONFIG_FILE_NAME = "test" + os.sep + "scc_config_test_statistics.json"
+
         test_statistics_file_path = "test" + os.sep + "StatisticsTestProject" + os.sep + "**"
+
         SourceCodeChecker.run_checker(dir_path=test_statistics_file_path, dir_relative=True, recursive=True)
         # 10 + 20 line count in the file
         self.assertEqual(30, SourceCodeChecker.STATISTICS_DATA.code_line_count)
 
+        # Restore config
+        SourceCodeChecker.CONFIG_FILE_NAME = original_config_file_name
 
 if __name__ == '__main__':
     unittest.main()
