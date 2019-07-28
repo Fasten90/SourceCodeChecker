@@ -449,7 +449,7 @@ class FileAnalysis():
             #line = line.rstrip(self.config.CONFIG_NEWLINE_CHARS)
             while len(line) > 0 and line[-1] in self.config.CONFIG_NEWLINE_CHARS:
                 line = line[0:-1]
-            if line != line.rstrip():
+            if line != line.rstrip(" \t"):
                 # Now, if "blabla " will not same with "blabla", it has trailing whitespace
                 self.add_issue(i, "There is trailing whitespace!")
                 if self.config.CONFIG_UNTIL_FIRST_ERROR:
