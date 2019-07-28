@@ -26,8 +26,8 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         SourceCodeChecker.LoadTestConfig()
 
-        sources_from = "test\\Src\\"
-        sources_to = "test\\TestSrc\\"
+        sources_from = "test/Src/"
+        sources_to = "test/TestSrc/"
         # Remove + Copy
         if os.path.isdir(sources_to):
             shutil.rmtree(sources_to)
