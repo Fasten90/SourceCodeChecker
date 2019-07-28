@@ -160,10 +160,15 @@ class FileAnalysis():
             # Do nothing!
             return
 
+        self.__issues = []
+
         if not file_path:
+            # This was necessary for test text and not a file
             print("Test mode")
             self.__file_content_string_list = test_text
             self.__update_new_file()
+            # Test name:
+            self.__file_path = "TestText_NotAFile"
             return
 
         self.__file_path = file_path
@@ -174,7 +179,7 @@ class FileAnalysis():
 
         self.__new_file_string = ""  # This will be the updated file
 
-        self.__issues = []
+
 
         print("Check file: {}".format(self.__file_path))
 
