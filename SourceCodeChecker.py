@@ -53,7 +53,7 @@ class FileAnalysisConfig():
 
         self.CONFIG_TAB_SPACE_SIZE = 4
 
-        self.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = False
+        self.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = True
 
         self.CONFIG_CORRECTIZE_HEADER_ENABLED = False
 
