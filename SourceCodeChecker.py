@@ -816,8 +816,8 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
 
     # Walk directories
     # glob use:<path>\**\*.c, recursive=True for subdirectory discovery
-    patten = dir_path + os.sep + file_types
-    file_list = glob.glob(patten, recursive=recursive)
+    pattern = dir_path + os.sep + file_types
+    file_list = glob.glob(pattern, recursive=recursive)
 
     statistics_prepare()
 
