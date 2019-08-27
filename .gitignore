@@ -4,3 +4,9 @@
 /.pydevproject
 
 /.idea
+
+# Generated test files
+test/TestSrc
+
+# Export files
+*.log
