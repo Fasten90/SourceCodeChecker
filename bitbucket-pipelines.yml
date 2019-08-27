@@ -29,6 +29,8 @@ pipelines:
           
           #- python -m unittest discover tests/
           - python -m unittest FileAnalysis_UnitTest.py
+          
+          - python -m pylint SourceCodeChecker.py --rcfile=pylintrc
 
           # TODO: Review
           #- cd $BITBUCKET_CLONE_DIR
