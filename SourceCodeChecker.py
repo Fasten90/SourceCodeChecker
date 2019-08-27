@@ -88,7 +88,7 @@ def LoadTestConfig():
     global CONFIG_FILE_NAME
     # Prepare the config
     # TODO: Save but not used
-    original_config_name = CONFIG_FILE_NAME
+    #original_config_name = CONFIG_FILE_NAME
 
     test_config_name = "test\\scc_config_test.json"
 
@@ -118,7 +118,6 @@ class ConfigHandler():
     @staticmethod
     def LoadFromFile():
         # Two-step loading
-        global _CONFIG_FILE_NAME
         config = None
         print("Start load SCC config from {}".format(CONFIG_FILE_NAME))
         # with open(_CONFIG_FILE_NAME, "r") as file:
@@ -322,8 +321,8 @@ class FileAnalysis():
 
     def add_issue(self, line_number, issue_text):
         self.__issues.append(FileIssue(self.__file_path,
-                                    line_number,
-                                    issue_text))
+                                       line_number,
+                                       issue_text))
 
     def print_issues(self):
         for issue in self.__issues:
@@ -402,16 +401,20 @@ class FileAnalysis():
             # Correct
             # replace tabs --> spaces
             new_file = []
+            result = True
             # TODO: Change to line replacer solution?
             for i, line in self.__file_content_enumerated_list:
                 new_line = line.replace("\t", " " * self.config.CONFIG_TAB_SPACE_SIZE)
                 if new_line != line:
                     self.add_issue(i, "Replaced tabulator(s) in the file!")
+                    result = False
                 new_file.append(new_line)
             self.__new_file_string = new_file
 
-            # replace spaces --> tab, but only in leading --> It is indent problem
+            return result
 
+            # replace spaces --> tab, but only in leading --> It is indent problem
+            # TODO: Delete
             """
             if mode == 2:
                 new_file = ""
@@ -421,7 +424,7 @@ class FileAnalysis():
                     column = 0
                     new_line = ""
                     for j in range(0, len(line)):
-                        
+
                         after_tab = False
                         while line[j] == "\t":
                             new_line += ' ' * self.config.CONFIG_TAB_SPACE_SIZE
@@ -436,8 +439,8 @@ class FileAnalysis():
                             else:
                                 # End of line
                                 break
-                        
-                            
+
+
                     # Save new_line
                     new_file += new_line + self.config.CONFIG_NEWLINE_CHARS
             """
