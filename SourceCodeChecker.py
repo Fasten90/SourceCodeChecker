@@ -145,8 +145,7 @@ class FileAnalysis():
     def __init__(self, file_path, test_text=None):
         """ Read the file """
 
-        # Create config
-        # TODO: Read from json
+        # Config
         self.config = FileAnalysisConfig()
 
         if ConfigHandler.ConfigIsAvailable():
@@ -157,6 +156,7 @@ class FileAnalysis():
 
         if not file_path and not test_text:
             # Do nothing!
+            assert "Used FileAnalysis with incorrect inputs"
             return
 
         self.__issues = []
@@ -177,7 +177,6 @@ class FileAnalysis():
         self.__file_content_full_string = ""  # This is from the loaded file
 
         self.__new_file_string = ""  # This will be the updated file
-
 
 
         print("Check file: {}".format(self.__file_path))
