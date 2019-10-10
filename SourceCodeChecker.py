@@ -23,7 +23,7 @@ class FileIssue():
         self.__issue = issue
 
     def print_issue(self):
-        print("{} file, {}. line has issue: {}".format(
+        print("[issue] {} file, {}. line has issue: {}".format(
             self.__file_path,
             self.__line_number,
             self.__issue
