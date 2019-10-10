@@ -468,6 +468,7 @@ class FileAnalysis():
             if self.config.CONFIG_TABS_ENABLED:
                 # Indent with tabs
                 line_free_tab = line.lstrip('\t')
+                # TODO: Think on C: '/*'.. and '*' problem
                 if line_free_tab != line_free_tab.lstrip(' '):
                     self.add_issue(i, "Indent is wrong! (Space after tab)")
                     if self.config.CONFIG_UNTIL_FIRST_ERROR:
@@ -476,13 +477,20 @@ class FileAnalysis():
                         result = False
             else:
                 # Indent with spaces
-                length_of_leading_spaces = len(line) - len(line.lstrip(' '))
-                if (length_of_leading_spaces % self.config.CONFIG_INDENT_SPACE_NUM) != 0:
-                    self.add_issue(i, "Indent is wrong! (Wrong number of spaces)")
-                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
-                        return False
-                    else:
-                        result = False
+                stripped_line = line.lstrip(' ')
+                # C special:
+                if stripped_line.startswith('/*') or stripped_line.startswith('*'):
+                    # Comment line, skip
+                    # result = True, but do not overwrite
+                    pass
+                else:
+                    length_of_leading_spaces = len(line) - len(stripped_line)
+                    if (length_of_leading_spaces % self.config.CONFIG_INDENT_SPACE_NUM) != 0:
+                        self.add_issue(i, "Indent is wrong! (Wrong number of spaces)")
+                        if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                            return False
+                        else:
+                            result = False
         return result
 
     def correctize_header_comment(self):

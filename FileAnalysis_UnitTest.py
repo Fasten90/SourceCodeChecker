@@ -57,8 +57,16 @@ class TestFileAnalysisClass(unittest.TestCase):
                 test_name = test_name.split('_')[0].lower()
                 # print(test_name) # Only for debug
 
-                # Check file name and issue is same?
-                assert test_name in issues.lower(), "{} test file has run in \"{}\" test, and generated issue: \"{}\"".format(file_path, test_name, issues)
+                # Check test type: _fail or _ok
+                test_type = os.path.splitext(file_path)[0]
+                if test_type.endswith("_fail"):
+                    # Check file name and issue is same?
+                    assert test_name in issues.lower(), "{} test file has run in \"{}\" test, and generated issues: \"{}\"".format(file_path, test_name, issues)
+                elif test_type.endswith("_ok"):
+                    # Check, test name is not in the issues()
+                    assert test_name not in issues.lower(), "{} test file has run in \"{}\" test, and generated issues: \"{}\"".format(file_path, test_name, issues)
+                else:
+                    raise Exception("Wrong test file name")
             else:
                 print("WARNING! Wrong test file name: \"{}\"".format(file_path))
             # print("{} test file has run successfully in {} test".format(file_path, test_name)) # Only for debug
