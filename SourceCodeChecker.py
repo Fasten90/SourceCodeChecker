@@ -844,7 +844,7 @@ if __name__ == "__main__":
     # Check 'PIPELINE_WORKSPACE' ENV
     is_pipeline = os.getenv("PIPELINE_WORKSPACE")
     if is_pipeline:
-        project_dir = "..\\..\\"
+        project_dir = ""
         print("Run on pipeline: '{}'".format(project_dir))
     else:
         project_dir = "..\\..\\AtollicWorkspace\\FastenHomeAut\\"
