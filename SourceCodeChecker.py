@@ -453,7 +453,7 @@ class FileAnalysis():
                 line = line[0:-1]
             if line != line.rstrip(" \t"):
                 # Now, if "blabla " will not same with "blabla", it has trailing whitespace
-                self.add_issue(i, "There is trailing whitespace!")
+                self.add_issue(i+1, "There is trailing whitespace!")  # +1 from starting line from 1.
                 if self.config.CONFIG_UNTIL_FIRST_ERROR:
                     return False
                 else:
@@ -470,7 +470,7 @@ class FileAnalysis():
                 line_free_tab = line.lstrip('\t')
                 # TODO: Think on C: '/*'.. and '*' problem
                 if line_free_tab != line_free_tab.lstrip(' '):
-                    self.add_issue(i, "Indent is wrong! (Space after tab)")
+                    self.add_issue(i+1, "Indent is wrong! (Space after tab)")  # +1 from starting line from 1.
                     if self.config.CONFIG_UNTIL_FIRST_ERROR:
                         return False
                     else:
@@ -479,6 +479,7 @@ class FileAnalysis():
                 # Indent with spaces
                 stripped_line = line.lstrip(' ')
                 # C special:
+                # TODO: Check it is in multiline coment?
                 if stripped_line.startswith('/*') or stripped_line.startswith('*'):
                     # Comment line, skip
                     # result = True, but do not overwrite
@@ -486,7 +487,7 @@ class FileAnalysis():
                 else:
                     length_of_leading_spaces = len(line) - len(stripped_line)
                     if (length_of_leading_spaces % self.config.CONFIG_INDENT_SPACE_NUM) != 0:
-                        self.add_issue(i, "Indent is wrong! (Wrong number of spaces)")
+                        self.add_issue(i+1, "Indent is wrong! (Wrong number of spaces)")  # +1 from starting line from 1.
                         if self.config.CONFIG_UNTIL_FIRST_ERROR:
                             return False
                         else:
