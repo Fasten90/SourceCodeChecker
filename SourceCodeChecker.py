@@ -841,10 +841,19 @@ if __name__ == "__main__":
     # FileAnalysis(file_path=None)
     # TODO: Add deeper wrapper for more directories
     #global CONFIG_FILE_NAME
-    CONFIG_FILE_NAME = "..\\..\\AtollicWorkspace\\FastenHomeAut\\scc_config.json"
-    run_checker(dir_path="..\\..\\AtollicWorkspace\\FastenHomeAut\\Src\\**", dir_relative=True, recursive=True)
-    run_checker(dir_path="..\\..\\AtollicWorkspace\\FastenHomeAut\\Inc\\**", dir_relative=True, recursive=True)
-    run_checker(dir_path="..\\..\\AtollicWorkspace\\FastenHomeAut\\Drivers\\x86\\**", dir_relative=True, recursive=True)
+    # Check 'PIPELINE_WORKSPACE' ENV
+    is_pipeline = os.getenv("PIPELINE_WORKSPACE")
+    if is_pipeline:
+        project_dir = "..\\"
+        print("Run on pipeline: '{}'".format(project_dir))
+    else:
+        project_dir = "..\\..\\AtollicWorkspace\\FastenHomeAut\\"
+        print("Run on local: '{}'".format(project_dir))
+
+    CONFIG_FILE_NAME = project_dir + "scc_config.json"
+    run_checker(dir_path=project_dir+"Src\\**", dir_relative=True, recursive=True)
+    run_checker(dir_path=project_dir+"Inc\\**", dir_relative=True, recursive=True)
+    run_checker(dir_path=project_dir+"Drivers\\x86\\**", dir_relative=True, recursive=True)
 
 # TODO: Unittest for TAB
 # TODO: Unittest for not tab (indent!)
