@@ -179,6 +179,58 @@ http://blabla.com
         # Restore config
         SourceCodeChecker.CONFIG_FILE_NAME = original_config_file_name
 
+    def test_function_description(self):
+        # CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED
+
+        #global CONFIG_FILE_NAME
+        #original_config_file_name = SourceCodeChecker.CONFIG_FILE_NAME
+
+        #self.change_config("CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED", True)
+
+        test_code = \
+"""
+  /**
+ * @doxygen   blabla1
+  *          blabla2
+ * @doxygen2 blabla3
+ *          blabla4
+     */
+void do_not_touch();
+"""
+        expected = \
+"""
+/**
+ * @doxygen     blabla1
+ *              blabla2
+ * @doxygen2    blabla3
+ *              blabla4
+ */
+void do_not_touch();
+"""
+        file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=test_code)
+
+        file_analysis.run_refactor_function_description_comment()
+
+        new__file = file_analysis.debug_get_new_file()
+        # TODO: Modify the test
+        new__file = new__file.replace("\r\n", "\n")
+        self.assertEqual(expected, new__file)
+        #SourceCodeChecker.run_checker(dir_path=test_statistics_file_path, dir_relative=True, recursive=True)
+
+        #self.assertEqual(30, SourceCodeChecker.STATISTICS_DATA.code_line_count)
+
+        # Restore config
+        #SourceCodeChecker.CONFIG_FILE_NAME = original_config_file_name
+
+    def change_config(self, name, value):
+        new_test_ssc_config_path = "test" + os.sep + "scc_config_test_" + name + ".json"
+        SourceCodeChecker.CONFIG_FILE_NAME = new_test_ssc_config_path
+
+        config = SourceCodeChecker.ConfigHandler.LoadFromFile()
+        config.name = value
+        SourceCodeChecker.ConfigHandler.SaveToFile(config)
+
+
 if __name__ == '__main__':
     unittest.main()
 
