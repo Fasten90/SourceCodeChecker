@@ -776,8 +776,8 @@ class FileAnalysis():
          */
         """
         # r"( *\/\*\*[\s\S]*?\*\/ *)"
-        #regex_multiline_comment = re.compile(r"( *\/\*\*.*?\*\/ *)", RegexFlag.MULTILINE)
-        regex_multiline_comment = re.compile(r"\/\*\*[\s\S]*\*\/", RegexFlag.MULTILINE)
+        #regex_multiline_comment = re.compile(r"( *\/\*\*.*?\*\/ *)", RegexFlag.MULTILINE)  # Grouping was problematic!
+        regex_multiline_comment = re.compile(r" *\/\*\*[\s\S]*?\*\/ *", RegexFlag.MULTILINE)
 
         is_changed = False
         # TODO: UnitTest
@@ -810,13 +810,14 @@ class FileAnalysis():
                     try:
                         # TODO: Only " * @" acceptable
                         pos_at = line.index("@")  # TODO: Hardcoded doxygen start char
-                        if line[pos_at-1] != ' ':
+                        if line[pos_at-1] != ' ': # Before @ There is a space?
                             # If not space, perhaps another situation, like e-mail address
                             break
-                        calculated_msg_index = pos_at + 1
+                        pos_doxygen_key = pos_at + 1
+                        calculated_msg_index = pos_doxygen_key
                         doxygen_keyword = ""
                         # Optimize with index(" ") ?
-                        for space_after_doxygen_char in line[pos_at:]:
+                        for space_after_doxygen_char in line[pos_doxygen_key:]:
                             if space_after_doxygen_char != ' ':
                                 calculated_msg_index += 1
                                 doxygen_keyword += space_after_doxygen_char
@@ -828,7 +829,7 @@ class FileAnalysis():
                             if space_after_doxygen_char == ' ':
                                 calculated_msg_index += 1
                             else:
-                                # First not space
+                                # First not space - started msg
                                 break
                         msg = line[calculated_msg_index:]
                         # Here: at after last space  --> Indent!
@@ -850,10 +851,10 @@ class FileAnalysis():
                                 star_pos = line.index("*")
                             except ValueError:
                                 star_pos = 0
-                            last_space_pos = star_pos
-                            for space_char in line[star_pos:]:
+                            last_space_pos = star_pos + 1
+                            for space_char in line[last_space_pos:]:
                                 if space_char == " ":
-                                    star_pos += 1
+                                    last_space_pos += 1
                                 else:
                                     break
                             msg = line[last_space_pos:]
@@ -869,6 +870,7 @@ class FileAnalysis():
                 # Finished
                 if is_changed:
                     refactored_lines = "".join([item + "\r\n" for item in refactored_lines])
+                    refactored_lines = refactored_lines.rstrip()
                     self.__new_file_string = self.__new_file_string .replace(multiline_comment, refactored_lines);
                 # TODO: Save
                 # self.add_issue(0, "file has not header")
