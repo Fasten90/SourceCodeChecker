@@ -61,6 +61,8 @@ class FileAnalysisConfig():
 
         self.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
 
+        self.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED = True
+
         self.CONFIG_RUN_REFACTOR_COMMENT_ENABLED = True
 
         self.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED = True
@@ -276,6 +278,11 @@ class FileAnalysis():
                 "checker": self.correctize_doxygen_keywords
             },
             {
+                "name": "Function description comment",
+                "config": self.config.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED,
+                "checker": self.run_refactor_function_description_comment
+            },
+            {
                 "name": "Refactor checker - Comment",
                 "config": self.config.CONFIG_RUN_REFACTOR_COMMENT_ENABLED,
                 "checker": self.run_refactor_comment
@@ -290,8 +297,9 @@ class FileAnalysis():
                 "config": self.config.CONFIG_EOF_MANDATORY_ENABLED,
                 "checker": self.correctize_EOF
             },
-
             ]
+
+        # TODO: Refactor: Default value shall moved to here
 
         # Check the list
         for element in analyze_list:
@@ -312,7 +320,7 @@ class FileAnalysis():
                     element["checker"]()
                 except Exception as e:
                     print("ERROR! Exception: {}".format(str(e)))
-                    pass
+                    raise
 
             # Rewrite file
             if self.config.CONFIG_CORRECTION_ENABLED:
@@ -739,6 +747,134 @@ class FileAnalysis():
         # TODO: Add test: //* ?
         # TODO: Check: /* blabla //bla */
         # TODO: Do not replace http://
+
+    def run_refactor_function_description_comment(self):
+        """
+        /**
+         * @brief   Convert signed decimal to string
+         * @note     Only max INT_MAX / 2 number can be converted
+         * @return    created string length
+         */
+        """
+
+        # 1. step
+        """
+        /**
+        * blabla
+        */
+        
+        /** test */ 
+        """
+
+        # https://regex101.com/r/iJIhCq/1
+        """
+        /**
+         * @doxygen   blabla1
+         *          blabla2
+         * @doxygen2 blabla3
+         *          blabla4
+         */
+        """
+        # r"( *\/\*\*[\s\S]*?\*\/ *)"
+        #regex_multiline_comment = re.compile(r"( *\/\*\*.*?\*\/ *)", RegexFlag.MULTILINE)
+        regex_multiline_comment = re.compile(r"\/\*\*[\s\S]*\*\/", RegexFlag.MULTILINE)
+
+        is_changed = False
+        # TODO: UnitTest
+        #result = regex_multiline_comment.match(self.__file_content_full_string)
+        result = True
+        if result is None:
+            self.debug_print_ok("{} file has not function description comment".format(self.__file_path))
+        else:
+            print("{} file has function description comment".format(self.__file_path))
+
+            self.__new_file_string = copy.deepcopy(self.__file_content_full_string)
+
+            #for multiline_comment in result.groups():
+            for multiline_comment in regex_multiline_comment.findall(self.__file_content_full_string):
+
+                if "@" in multiline_comment:
+                    print(multiline_comment)
+                else:
+                    self.debug_print_ok("Skip this multiline comment")
+                    continue
+                lines = multiline_comment.splitlines()
+                # First line mandatory: /**
+                lines[0] = "/**"
+                # Last line mandatory */
+                lines[-1] = " */"
+                previous_indent = 0
+                refactored_lines = copy.deepcopy(lines)
+                for line_index,line in enumerate(lines[1:-1]):
+                    #  * @blabla   blabla
+                    try:
+                        # TODO: Only " * @" acceptable
+                        pos_at = line.index("@")  # TODO: Hardcoded doxygen start char
+                        if line[pos_at-1] != ' ':
+                            # If not space, perhaps another situation, like e-mail address
+                            break
+                        calculated_msg_index = pos_at + 1
+                        doxygen_keyword = ""
+                        # Optimize with index(" ") ?
+                        for space_after_doxygen_char in line[pos_at:]:
+                            if space_after_doxygen_char != ' ':
+                                calculated_msg_index += 1
+                                doxygen_keyword += space_after_doxygen_char
+                            else:
+                                # First space
+                                break
+                        # Here: at after first space
+                        for space_after_doxygen_char in line[calculated_msg_index:]:
+                            if space_after_doxygen_char == ' ':
+                                calculated_msg_index += 1
+                            else:
+                                # First not space
+                                break
+                        msg = line[calculated_msg_index:]
+                        # Here: at after last space  --> Indent!
+
+                        refactored_line = " * @" + doxygen_keyword
+                        # " @VeryLongPls "
+                        calculated_msg_index = max(16, calculated_msg_index)
+                        previous_indent = calculated_msg_index
+                        refactored_line += " " * (calculated_msg_index - len(refactored_line))
+                        refactored_line += msg
+                        #line = refactored_line
+                        refactored_lines[line_index + 1] = refactored_line
+                        is_changed = True
+                    except ValueError:
+                        # no @
+                        # Indent as previous line
+                        if previous_indent:
+                            try:
+                                star_pos = line.index("*")
+                            except ValueError:
+                                star_pos = 0
+                            last_space_pos = star_pos
+                            for space_char in line[star_pos:]:
+                                if space_char == " ":
+                                    star_pos += 1
+                                else:
+                                    break
+                            msg = line[last_space_pos:]
+                            refactored_line = " * "
+                            refactored_line += " " * (previous_indent - len(refactored_line))
+                            refactored_line += msg
+                            #line = refactored_line
+                            refactored_lines[line_index + 1] = refactored_line
+                            is_changed = True
+                        else:
+                            # There is no calculated indent
+                            print("No calculated indent")
+                # Finished
+                if is_changed:
+                    refactored_lines = "".join([item + "\r\n" for item in refactored_lines])
+                    self.__new_file_string = self.__new_file_string .replace(multiline_comment, refactored_lines);
+                # TODO: Save
+                # self.add_issue(0, "file has not header")
+
+        if not is_changed:
+            self.__new_file_string = ""
 
     def run_refactor_unused_argument(self):
         """
