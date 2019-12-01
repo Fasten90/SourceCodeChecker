@@ -192,7 +192,7 @@ class FileAnalysis():
             self.__file_content_string_list = file.readlines()
             # print("File encode is OK")
             self.__update_new_file()
-        except:
+        except UnicodeDecodeError:
             self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
 
         file.close()
@@ -303,9 +303,9 @@ class FileAnalysis():
 
         # Check the list
         for element in analyze_list:
-            assert("name" in element.keys())
-            assert("config" in element.keys())
-            assert("checker" in element.keys())
+            assert "name" in element.keys()
+            assert "config" in element.keys()
+            assert "checker" in element.keys()
 
         # Execute command
         for element in analyze_list:
@@ -726,7 +726,7 @@ class FileAnalysis():
         is_changed = False
         for i, line in self.__file_content_enumerated_list:
             result = regex_text_full_line.match(line)
-            if result != None:
+            if result is not None:
                 if result.regs[0][0] == 0:  # This check: the full match is start with first character of line?
                     # So, if regex found full line, we can replace:
                     new_line = regex_replace.sub(r"/* \1 */", line)
@@ -762,8 +762,8 @@ class FileAnalysis():
         /**
         * blabla
         */
-        
-        /** test */ 
+
+        /** test */
         """
 
         # https://regex101.com/r/iJIhCq/1
@@ -799,14 +799,14 @@ class FileAnalysis():
                     self.debug_print_ok("Skip this multiline comment")
                     continue
                 lines = multiline_comment.splitlines()
-                # First line mandatory: /**
+                # First line mandatory: "/**"
                 lines[0] = "/**"
-                # Last line mandatory */
+                # Last line mandatory " */"
                 lines[-1] = " */"
                 previous_indent = 0
                 refactored_lines = copy.deepcopy(lines)
-                for line_index,line in enumerate(lines[1:-1]):
-                    #  * @blabla   blabla
+                for line_index, line in enumerate(lines[1:-1]):
+                    # " * @blabla   blabla"
                     try:
                         # TODO: Only " * @" acceptable
                         pos_at = line.index("@")  # TODO: Hardcoded doxygen start char
@@ -871,7 +871,7 @@ class FileAnalysis():
                 if is_changed:
                     refactored_lines = "".join([item + "\r\n" for item in refactored_lines])
                     refactored_lines = refactored_lines.rstrip()
-                    self.__new_file_string = self.__new_file_string .replace(multiline_comment, refactored_lines);
+                    self.__new_file_string = self.__new_file_string .replace(multiline_comment, refactored_lines)
                 # TODO: Save
                 # self.add_issue(0, "file has not header")
 
