@@ -38,5 +38,7 @@ pipelines:
           - python -m unittest FileAnalysis_UnitTest.py
           # Run Pylint
           #- python -m pylint SourceCodeChecker.py --rcfile=pylintrc
+          # Without this chmod - the bash script executing will fail: "Permission denied"
+          - chmod +x RunPylint.sh
           - ./RunPylint.sh
 
