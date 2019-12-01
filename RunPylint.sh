@@ -7,7 +7,8 @@ python -m pylint SourceCodeChecker.py --rcfile=pylintrc
 
 PYLINT_EXIT_CODE=$?
 
-if [ $PYLINT_EXIT_CODE % 2 == 1 ] || [ $PYLINT_EXIT_CODE % 4 == 2 ]
+#if [ $(($PYLINT_EXIT_CODE % 2)) -eq 1 ] || [ $(($PYLINT_EXIT_CODE % 4)) -eq 2 ]
+if [ $(($PYLINT_EXIT_CODE % 2)) == 1 ] || [ $(($PYLINT_EXIT_CODE % 4)) == 2 ]
 then
   echo 'Pylint exited with important error code: ' $PYLINT_EXIT_CODE
   exit 1
