@@ -38,5 +38,5 @@ pipelines:
           - python -m unittest FileAnalysis_UnitTest.py
           # Run Pylint
           #- python -m pylint SourceCodeChecker.py --rcfile=pylintrc
-          - RunPylint.sh
+          - ./RunPylint.sh
 
