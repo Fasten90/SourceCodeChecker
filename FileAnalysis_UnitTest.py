@@ -24,7 +24,7 @@ class TestFileAnalysisClass(unittest.TestCase):
 
     def test_checkers(self):
 
-        SourceCodeChecker.LoadTestConfig()
+        SourceCodeChecker.Load_UnitTest_CheckerConfig()
 
         # Copy the test files, because it will be changed
         sources_from = "test" + os.sep + "Src" + os.sep
@@ -42,7 +42,8 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         # Check test files
         for file_path in file_list:
-            file_analysis = SourceCodeChecker.FileAnalysis(file_path)
+            file_analysis = SourceCodeChecker.Checker()
+            file_analysis.load(file_path)
             file_analysis.analyze()
             # file_analysis.print_issues() # Only for debug
             issues = file_analysis.get_text_of_issues()
@@ -92,7 +93,8 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         # SourceCodeChecker.CONFIG_FILE_NAME = temporary_configname
         # make Analysis for checking, did it create the config?
-        SourceCodeChecker.FileAnalysis(None)
+        file_analysis = SourceCodeChecker.Checker()
+        #file_analysis.load() # Not used because only the init shall executed
 
         # Shall exists
         assert(os.path.exists(original_config_name))
@@ -129,7 +131,8 @@ http://blabla.com
  Please do not change me, I am link, http://blabla
 """
 
-        file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=text)
 
         file_analysis.run_refactor_comment()
 
@@ -153,7 +156,7 @@ http://blabla.com
         "// Do not replace these:\r\n" \
         "blabla (void)a;\r\n"
 
-        file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=text)
+        file_analysis = SourceCodeChecker.Checker(file_path=None, test_text=text)
 
         file_analysis.run_refactor_unused_argument()
 
@@ -207,7 +210,8 @@ void do_not_touch();
  */
 void do_not_touch();
 """
-        file_analysis = SourceCodeChecker.FileAnalysis(file_path=None, test_text=test_code)
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
 
         file_analysis.run_refactor_function_description_comment()
 

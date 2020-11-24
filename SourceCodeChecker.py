@@ -14,7 +14,7 @@ CONFIG_STATISTICS_ENABLED = True
 STATISTICS_DATA = None
 
 
-class FileIssue():
+class FileIssue:
 
     # Helper class for Issue administration
     def __init__(self, file_path, line_number, issue):
@@ -33,7 +33,7 @@ class FileIssue():
         return self.__issue
 
 
-class FileAnalysisConfig():
+class CheckerConfig:
 
     def __init__(self):
 
@@ -81,12 +81,17 @@ class FileAnalysisConfig():
 
         self.debug_enabled = True
 
+        # XXX
+
     def toJSON(self):
         # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
         return json.dumps(self.__dict__, sort_keys=True, indent=4)
 
 
-def LoadTestConfig():
+config = CheckerConfig()
+
+
+def Load_UnitTest_CheckerConfig():
     global CONFIG_FILE_NAME
     # Prepare the config
     # TODO: Save but not used
@@ -97,7 +102,7 @@ def LoadTestConfig():
     CONFIG_FILE_NAME = test_config_name
 
 
-class ConfigHandler():
+class ConfigHandler:
 
     # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
     @staticmethod
@@ -142,19 +147,22 @@ class ConfigHandler():
         return os.path.exists(CONFIG_FILE_NAME)
 
 
-class FileAnalysis():
+class Checker:
 
-    def __init__(self, file_path, test_text=None):
-        """ Read the file """
-
+    def __init__(self):
+        """ Set important things """
         # Config
-        self.config = FileAnalysisConfig()
+        self.config = CheckerConfig()
 
         if ConfigHandler.ConfigIsAvailable():
             self.config = ConfigHandler.LoadFromFile()
         else:
             print("Create default config")
             ConfigHandler.SaveToFile(self.config)
+
+
+    def load(self, file_path, test_text=None):
+        """ Read the file """
 
         if not file_path and not test_text:
             # Do nothing!
@@ -236,79 +244,8 @@ class FileAnalysis():
 
     def analyze(self):
 
-        analyze_list = [
-            {
-                "name": "ASCII checker",
-                "config": self.config.CONFIG_ASCII_CHECKER_ENABLED,
-                "checker": self.check_ASCII
-            },
-            {
-                "name": "Newline checker",
-                "config": self.config.CONFIG_NEWLINE_CHECKER_ENABLED,
-                "checker": self.check_newline
-            },
-            {
-                "name": "Tabs checker",
-                "config": self.config.CONFIG_TABS_CHECKER_ENABLED,
-                "checker": self.check_tabs
-            },
-            {
-                "name": "Indent checker",
-                "config": self.config.CONFIG_INDENT_CHECKER_IS_ENABLED,
-                "checker": self.check_indent
-            },
-            {
-                "name": "Trailing whitespace checker",
-                "config": self.config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED,
-                "checker": self.check_trailing_whitespace
-            },
-            {
-                "name": "Header comment checker",
-                "config": self.config.CONFIG_CORRECTIZE_HEADER_ENABLED,
-                "checker": self.correctize_header_comment
-            },
-            {
-                "name": "Include guard checker",
-                "config": self.config.CONFIG_CORRECTIZE_INCLUDE_GUARD,
-                "checker": self.correctize_include_guard
-            },
-            {
-                "name": "Doxygen keywords checker",
-                "config": self.config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED,
-                "checker": self.correctize_doxygen_keywords
-            },
-            {
-                "name": "Function description comment",
-                "config": self.config.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED,
-                "checker": self.run_refactor_function_description_comment
-            },
-            {
-                "name": "Refactor checker - Comment",
-                "config": self.config.CONFIG_RUN_REFACTOR_COMMENT_ENABLED,
-                "checker": self.run_refactor_comment
-            },
-            {
-                "name": "Refactor checker - Unused argument",
-                "config": self.config.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED,
-                "checker": self.run_refactor_unused_argument
-            },
-            {
-                "name": "EOF checker",
-                "config": self.config.CONFIG_EOF_MANDATORY_ENABLED,
-                "checker": self.correctize_EOF
-            },
-            ]
-
-        # TODO: Refactor: Default value shall moved to here
-
-        # Check the list
-        for element in analyze_list:
-            assert "name" in element.keys()
-            assert "config" in element.keys()
-            assert "checker" in element.keys()
-
         # Execute command
-        for element in analyze_list:
+        for element in self.config.checker_list:
             # Rewrite file
             if self.config.CONFIG_CORRECTION_ENABLED:
                 self.__update_new_file()
@@ -920,7 +857,86 @@ class FileAnalysis():
         # TODO: Add type checker
         pass
 
-class Statistics():
+
+class Checkers:
+
+    checker_list = [
+    {
+        "name": "ASCII checker",
+        "config": config.CONFIG_ASCII_CHECKER_ENABLED,
+        "checker": Checker.check_ASCII
+    },
+    {
+        "name": "Newline checker",
+        "config": config.CONFIG_NEWLINE_CHECKER_ENABLED,
+        "checker": Checker.check_newline
+    },
+    {
+        "name": "Tabs checker",
+        "config": config.CONFIG_TABS_CHECKER_ENABLED,
+        "checker": Checker.check_tabs
+    },
+    {
+        "name": "Indent checker",
+        "config": config.CONFIG_INDENT_CHECKER_IS_ENABLED,
+        "checker": Checker.check_indent
+    },
+    {
+        "name": "Trailing whitespace checker",
+        "config": config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED,
+        "checker": Checker.check_trailing_whitespace
+    },
+    {
+        "name": "Header comment checker",
+        "config": config.CONFIG_CORRECTIZE_HEADER_ENABLED,
+        "checker": Checker.correctize_header_comment
+    },
+    {
+        "name": "Include guard checker",
+        "config": config.CONFIG_CORRECTIZE_INCLUDE_GUARD,
+        "checker": Checker.correctize_include_guard
+    },
+    {
+        "name": "Doxygen keywords checker",
+        "config": config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED,
+        "checker": Checker.correctize_doxygen_keywords
+    },
+    {
+        "name": "Function description comment",
+        "config": config.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED,
+        "checker": Checker.run_refactor_function_description_comment
+    },
+    {
+        "name": "Refactor checker - Comment",
+        "config": config.CONFIG_RUN_REFACTOR_COMMENT_ENABLED,
+        "checker": Checker.run_refactor_comment
+    },
+    {
+        "name": "Refactor checker - Unused argument",
+        "config": config.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED,
+        "checker": Checker.run_refactor_unused_argument
+    },
+    {
+        "name": "EOF checker",
+        "config": config.CONFIG_EOF_MANDATORY_ENABLED,
+        "checker": Checker.correctize_EOF
+    },
+
+    # XXX: Add here the new checker
+    ]
+
+    def __init__(self):
+        # Check the list
+        for element in self.checker_list:
+            assert "name" in element.keys()
+            assert "config" in element.keys()
+            assert "checker" in element.keys()
+
+
+analyze = Checker()
+
+
+class Statistics:
     code_line_count = 0
 
     def __init__(self):
@@ -959,7 +975,7 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
     # TODO: Implement checks
     # TODO: Implement change_mode
 
-    print("Directory: {}\n" \
+    print("Directory: {}\n"
           "File types: {}".format(
               dir_path, file_types))
 
@@ -972,7 +988,8 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
 
     # Check files
     for file_path in file_list:
-        file_analysis = FileAnalysis(file_path)
+        file_analysis = Checker()
+        file_analysis.load(file_path)
         file_analysis.analyze()
         file_analysis.print_issues()
         statistics_file_code_line(file_analysis.get_code_lines_count(), file_analysis.get_file_name())
