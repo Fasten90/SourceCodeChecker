@@ -37,57 +37,13 @@ class CheckerConfig:
 
     def __init__(self):
 
-        # TODO: Make a config for set these
-        self.CONFIG_ENCODE = "utf8"
-
-        self.CONFIG_TABS_ENABLED = False
-        self.CONFIG_TABS_CHECKER_ENABLED = False
-
-        self.CONFIG_ASCII_CHECKER_ENABLED = False
-
-        self.CONFIG_NEWLINE_CHECKER_ENABLED = True
-        self.CONFIG_NEWLINE_CHARS = "\r\n"
-
-        self.CONFIG_INDENT_SPACE_NUM = 4
-        self.CONFIG_INDENT_CHECKER_IS_ENABLED = True
-
-        self.CONFIG_TAB_SPACE_SIZE = 4
-
-        self.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = True
-
-        self.CONFIG_CORRECTIZE_HEADER_ENABLED = False
-
-        self.CONFIG_CORRECTIZE_INCLUDE_GUARD = False
-
-        self.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
-
-        self.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED = True
-
-        self.CONFIG_RUN_REFACTOR_COMMENT_ENABLED = True
-
-        self.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED = True
-
-        self.CONFIG_CREATOR = "Vizi Gabor"
-        self.CONFIG_E_MAIL = "vizi.gabor90@gmail.com"
-
-        # TODO: Add "until one error" / "check all file" mode
-        self.CONFIG_UNTIL_FIRST_ERROR = False
-
-        self.CONFIG_CORRECTION_ENABLED = True
-
-        self.CONFIG_EOF_MANDATORY_ENABLED = True
-
-        # self.CONFIG_STATISTICS_ENABLED = True
-
-        self.debug_enabled = True
-
         # XXX
 
     def toJSON(self):
         # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
         return json.dumps(self.__dict__, sort_keys=True, indent=4)
 
-
+# Load default configs
 config = CheckerConfig()
 
 
@@ -95,7 +51,6 @@ def Load_UnitTest_CheckerConfig():
     global CONFIG_FILE_NAME
     # Prepare the config
     # TODO: Save but not used
-    #original_config_name = CONFIG_FILE_NAME
 
     test_config_name = "test\\scc_config_test.json"
 
@@ -129,10 +84,10 @@ class ConfigHandler:
         print("Start load SCC config from {}".format(CONFIG_FILE_NAME))
         # with open(_CONFIG_FILE_NAME, "r") as file:
         with open(CONFIG_FILE_NAME, "r") as file:
-            config = file.read()
+            config_raw = file.read()
 
         # self = json.loads(config)
-        config = json.loads(config, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+        config = json.loads(config_raw, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
 
         print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
 
@@ -863,65 +818,110 @@ class Checkers:
 
     checker_list = [
     {
+        "name":  "CONFIG_ENCODE",
+        "default_value": "utf8"
+    },
+    {
         "name": "ASCII checker",
-        "config": config.CONFIG_ASCII_CHECKER_ENABLED,
-        "checker": Checker.check_ASCII
+        "checker": Checker.check_ASCII,
+        "default_value": False,
+    },
+    {
+        "name": "Newline chars",
+        "default_value": "\r\n"
     },
     {
         "name": "Newline checker",
-        "config": config.CONFIG_NEWLINE_CHECKER_ENABLED,
-        "checker": Checker.check_newline
+        "checker": Checker.check_newline,
+        "default_value": True
+    },
+    {
+        "name": "Tabs enabled",
+        "default_value": False
+    },
+    {
+        "name": "Tab space size",
+        "default_value": 4
     },
     {
         "name": "Tabs checker",
-        "config": config.CONFIG_TABS_CHECKER_ENABLED,
-        "checker": Checker.check_tabs
+        "checker": Checker.check_tabs,
+        "default_value": False
+    },
+    {
+        "name": "Indent space num",
+        "default_value": 4
     },
     {
         "name": "Indent checker",
-        "config": config.CONFIG_INDENT_CHECKER_IS_ENABLED,
-        "checker": Checker.check_indent
+        "checker": Checker.check_indent,
+        "default_value": True
     },
     {
         "name": "Trailing whitespace checker",
-        "config": config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED,
-        "checker": Checker.check_trailing_whitespace
+        "checker": Checker.check_trailing_whitespace,
+        "default_value": True
     },
     {
         "name": "Header comment checker",
-        "config": config.CONFIG_CORRECTIZE_HEADER_ENABLED,
-        "checker": Checker.correctize_header_comment
+        "checker": Checker.correctize_header_comment,
+        "default_value": False
     },
     {
         "name": "Include guard checker",
-        "config": config.CONFIG_CORRECTIZE_INCLUDE_GUARD,
-        "checker": Checker.correctize_include_guard
+        "checker": Checker.correctize_include_guard,
+        "default_value": False
     },
+    # TODO: Checker?
     {
         "name": "Doxygen keywords checker",
-        "config": config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED,
-        "checker": Checker.correctize_doxygen_keywords
+        "checker": Checker.correctize_doxygen_keywords,
+        "default_value": False
     },
     {
         "name": "Function description comment",
-        "config": config.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED,
-        "checker": Checker.run_refactor_function_description_comment
+        "checker": Checker.run_refactor_function_description_comment,
+        "default_value": True
     },
     {
         "name": "Refactor checker - Comment",
-        "config": config.CONFIG_RUN_REFACTOR_COMMENT_ENABLED,
-        "checker": Checker.run_refactor_comment
+        "checker": Checker.run_refactor_comment,
+        "default_value": True
     },
     {
         "name": "Refactor checker - Unused argument",
-        "config": config.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED,
-        "checker": Checker.run_refactor_unused_argument
+        "checker": Checker.run_refactor_unused_argument,
+        "default_value": True
     },
     {
         "name": "EOF checker",
-        "config": config.CONFIG_EOF_MANDATORY_ENABLED,
-        "checker": Checker.correctize_EOF
+        "checker": Checker.correctize_EOF,
+        "default_value": True
     },
+    {
+        "name": "debug enabled",
+        "default_value": True
+    },
+    {
+        "name": "Creator",
+        "default_value": "Vizi Gabor"
+    },
+    {
+        "name": "E-mail",
+        "default_value": "vizi.gabor90@gmail.com"
+    },
+    {
+        "name": "Until first error",
+        "default_value": False
+    },
+    {
+        "name": "Correction enabled",
+        "default_value": True
+    },
+    {
+        "name": "Statistics enabled",
+        "default_value": True
+    }
 
     # XXX: Add here the new checker
     ]
