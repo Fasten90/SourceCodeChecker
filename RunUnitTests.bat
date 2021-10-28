@@ -1,3 +1,3 @@
-python -m unittest FileAnalysis_UnitTest.py
-::python -m unittest FileAnalysis_UnitTest.py > unittest.log
+python -m unittest test_file_analysis.py
+::python -m unittest test_file_analysis.py > unittest.log
 ::type unittest.log
