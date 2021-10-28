@@ -1,0 +1,28 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+#trigger:
+#- master
+
+
+stages:
+- stage: Tests
+  jobs:
+
+  - job: unittest
+    pool:
+      vmImage: 'windows-2019'
+    displayName: 'unittest'
+    steps:
+    - script: |
+        exec_python_unittests_with_install.bat
+
+  - job: pylint
+    pool:
+      vmImage: 'windows-2019'
+    displayName: 'pylint'
+    steps:
+    - script: |
+        exec_pylint_with_install.bat
