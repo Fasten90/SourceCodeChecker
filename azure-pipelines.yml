@@ -16,6 +16,10 @@ stages:
       vmImage: 'windows-2019'
     displayName: 'unittest'
     steps:
+    - script: "git config --global core.autocrlf false"
+      displayName: "Configure Git"
+    - checkout: self
+      displayName: "Clone repository"
     - script: |
         exec_python_unittests_with_install.bat
 
