@@ -33,20 +33,7 @@ class FileIssue:
         return self.__issue
 
 
-class CheckerConfig:
-
-    def __init__(self):
-
-        # XXX
-
-    def toJSON(self):
-        # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-        return json.dumps(self.__dict__, sort_keys=True, indent=4)
-
-# Load default configs
-config = CheckerConfig()
-
-
+# TODO: Improve
 def Load_UnitTest_CheckerConfig():
     global CONFIG_FILE_NAME
     # Prepare the config
@@ -86,16 +73,34 @@ class ConfigHandler:
         with open(CONFIG_FILE_NAME, "r") as file:
             config_raw = file.read()
 
-        # self = json.loads(config)
-        config = json.loads(config_raw, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+        # TODO: SUPPORT THE CONFIG
+        try:
+            Configs = json.loads(config_raw)
+        except Exception as ex:
+            print('Wrong config')
+
+        # Classificate # TODO: Remove if not needed
+        #config = json.loads(config_raw, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
 
         print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
 
-        return config
-        # o.__dict__ = config
+        # TODO: Restructure for temporary
+        config = CheckerConfig().config
+        new_config = {}
+        [new_config.update({name: key['default_value']}) for name, key in config.items()]
+        # Restructure
+        #         "ASCII checker": {
+        #             "checker": Checker.check_ASCII,
+        #             "default_value": False,
+        #         },
+        # TO
+        # "ASCII checker" : false
 
-        # obj2_dict = simplejson.loads(config)
-        # obj2 = MyCustom.from_json(obj2_dict)
+        # Check if settings missed?
+        # Print the default value
+
+        return new_config
+
 
     @staticmethod
     def ConfigIsAvailable():
@@ -147,7 +152,7 @@ class Checker:
         print("Check file: {}".format(self.__file_path))
 
         # file = open(file_path,'rt')
-        file = codecs.open(self.__file_path, 'r', encoding=self.config.CONFIG_ENCODE)
+        file = codecs.open(self.__file_path, 'r', encoding=self.config['ENCODE'])
 
         # Read entire file
         try:
@@ -156,7 +161,7 @@ class Checker:
             # print("File encode is OK")
             self.__update_new_file()
         except UnicodeDecodeError:
-            self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
+            self.add_issue(0, "Not {} encoded".format(self.config['ENCODE']))
 
         file.close()
 
@@ -176,8 +181,8 @@ class Checker:
                 # Note: be careful - hold the newlines!
                 self.__file_content_string_list = self.__new_file_string.splitlines(keepends=True)
                 # self.__file_content_string_list = []
-                # self.__file_content_string_list.append(line + self.config.CONFIG_NEWLINE_CHARS for line in self.__new_file_string.splitlines())
-            file = codecs.open(self.__file_path, 'w', encoding=self.config.CONFIG_ENCODE)
+                # self.__file_content_string_list.append(line + self.config['Newline chars'] for line in self.__new_file_string.splitlines())
+            file = codecs.open(self.__file_path, 'w', encoding=self.config['ENCODE'])
             file.writelines(self.__new_file_string)
             file.close()
             print("Updated file: {}".format(self.__file_path))
@@ -194,28 +199,35 @@ class Checker:
             print(("ERROR! Problem with update new file! {}".format(str(e))))
             raise e
         self.__file_content_full_string = "".join(self.__file_content_string_list)
-        # self.__file_content_full_string = "".join((line + self.config.CONFIG_NEWLINE_CHARS) for line in self.__file_content_string_list)
+        # self.__file_content_full_string = "".join((line + self.config['Newline chars']) for line in self.__file_content_string_list)
         self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
 
     def analyze(self):
 
         # Execute command
-        for element in self.config.checker_list:
+
+        # TODO: This is a trick: Use the original configs for look around
+        new_checkers = CheckerConfig().config
+        for checker_name, checker_dict in new_checkers.items():
+            if 'checker' not in checker_dict:
+                # This is a config and not a checker
+                continue
+
             # Rewrite file
-            if self.config.CONFIG_CORRECTION_ENABLED:
+            if self.config['Correction enabled']:
                 self.__update_new_file()
 
             # Execute
-            if element["config"]:
-                self.debug_print_ok("Run \"{}\" checker".format(element["name"]))
+            if self.config[checker_name]:  # This is the config value
+                self.debug_print_ok("Run \"{}\" checker".format(checker_name))
                 try:
-                    element["checker"]()
+                    checker_dict["checker"](self)
                 except Exception as e:
                     print("ERROR! Exception: {}".format(str(e)))
                     raise
 
             # Rewrite file
-            if self.config.CONFIG_CORRECTION_ENABLED:
+            if self.config['Correction enabled']:
                 self.update_changed_file()
 
     def add_issue(self, line_number, issue_text):
@@ -236,8 +248,9 @@ class Checker:
     # ----------------------------------------------------
 
     def debug_print_ok(self, line):
-        if self.config.debug_enabled:
+        if self.config['debug enabled']:
             print(line)
+    # TODO: Add log_warning?
 
     # ----------------------------------------------------
 
@@ -257,8 +270,8 @@ class Checker:
                     # TODO Debug..
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
-                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
-                        self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
+                    if self.config['Until first error']:
+                        self.add_issue(0, "Not {} encoded".format(self.config['ENCODE']))
                         # TODO: Change the immediately return code
                         return False
                     else:
@@ -270,10 +283,10 @@ class Checker:
         result = True
         for i, line in self.__file_content_enumerated_list:
             # Get last characters
-            last_chars = line[-len(self.config.CONFIG_NEWLINE_CHARS) : ]
-            if last_chars != self.config.CONFIG_NEWLINE_CHARS:
+            last_chars = line[-len(self.config['Newline chars']) : ]
+            if last_chars != self.config['Newline chars']:
                 self.add_issue(i, "There is a wrong newline in the file!")
-                if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                if self.config['Until first error']:
                     return False
                 else:
                     result = False
@@ -285,13 +298,13 @@ class Checker:
 
     def check_tabs(self):
 
-        if not self.config.CONFIG_CORRECTION_ENABLED:
+        if not self.config['Correction enabled']:
             # Only checker, do not correct
             result = True
             for i, line in self.__file_content_enumerated_list:
                 if "\t" in line:
                     self.add_issue(i, "There is a tabulator in the file!")
-                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                    if self.config['Until first error']:
                         return False
                     else:
                         result = False
@@ -303,7 +316,7 @@ class Checker:
             result = True
             # TODO: Change to line replacer solution?
             for i, line in self.__file_content_enumerated_list:
-                new_line = line.replace("\t", " " * self.config.CONFIG_TAB_SPACE_SIZE)
+                new_line = line.replace("\t", " " * self.config['Tab space size'])
                 if new_line != line:
                     self.add_issue(i, "Replaced tabulator(s) in the file!")
                     result = False
@@ -312,49 +325,17 @@ class Checker:
 
             return result
 
-            # replace spaces --> tab, but only in leading --> It is indent problem
-            # TODO: Delete
-            """
-            if mode == 2:
-                new_file = ""
-                previous_line_tabs = []
-                for i, line in enumerate(self.__file_content_string_list):
-                    # read line char by char
-                    column = 0
-                    new_line = ""
-                    for j in range(0, len(line)):
-
-                        after_tab = False
-                        while line[j] == "\t":
-                            new_line += ' ' * self.config.CONFIG_TAB_SPACE_SIZE
-                            column += self.config.CONFIG_TAB_SPACE_SIZE
-                            j += 1
-                            after_tab = True
-                        # When we here, we are after the tab
-                        if after_tab:
-                            if j != len(line):
-                                # Check the column
-                                previous_line_tabs.append(j-1)
-                            else:
-                                # End of line
-                                break
-
-
-                    # Save new_line
-                    new_file += new_line + self.config.CONFIG_NEWLINE_CHARS
-            """
-
     def check_trailing_whitespace(self):
         result = True
         for i, line in self.__file_content_enumerated_list:
             # Strip newline characters
-            #line = line.rstrip(self.config.CONFIG_NEWLINE_CHARS)
-            while len(line) > 0 and line[-1] in self.config.CONFIG_NEWLINE_CHARS:
+            #line = line.rstrip(self.config['Newline chars'])
+            while len(line) > 0 and line[-1] in self.config['Newline chars']:
                 line = line[0:-1]
             if line != line.rstrip(" \t"):
                 # Now, if "blabla " will not same with "blabla", it has trailing whitespace
                 self.add_issue(i+1, "There is trailing whitespace!")  # +1 from starting line from 1.
-                if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                if self.config['Until first error']:
                     return False
                 else:
                     result = False
@@ -365,13 +346,13 @@ class Checker:
     def check_indent(self):
         result = True
         for i, line in self.__file_content_enumerated_list:
-            if self.config.CONFIG_TABS_ENABLED:
+            if self.config['Tabs enabled']:
                 # Indent with tabs
                 line_free_tab = line.lstrip('\t')
                 # TODO: Think on C: '/*'.. and '*' problem
                 if line_free_tab != line_free_tab.lstrip(' '):
                     self.add_issue(i+1, "Indent is wrong! (Space after tab)")  # +1 from starting line from 1.
-                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                    if self.config['Until first error']:
                         return False
                     else:
                         result = False
@@ -386,9 +367,9 @@ class Checker:
                     pass
                 else:
                     length_of_leading_spaces = len(line) - len(stripped_line)
-                    if (length_of_leading_spaces % self.config.CONFIG_INDENT_SPACE_NUM) != 0:
+                    if (length_of_leading_spaces % self.config['Indent space num']) != 0:
                         self.add_issue(i+1, "Indent is wrong! (Wrong number of spaces)")  # +1 from starting line from 1.
-                        if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                        if self.config['Until first error']:
                             return False
                         else:
                             result = False
@@ -461,14 +442,14 @@ class Checker:
                 " *    Target:       {target}",
                 " */"
             ]
-            new_header = ''.join((line + self.config.CONFIG_NEWLINE_CHARS) for line in new_header_format)
-            new_header = new_header.rstrip(self.config.CONFIG_NEWLINE_CHARS)  # delete last new chars
+            new_header = ''.join((line + self.config['Newline chars']) for line in new_header_format)
+            new_header = new_header.rstrip(self.config['Newline chars'])  # delete last new chars
 
             new_header = new_header.format(
                 filename=result.group("filename"),
                 created_date=result.group("created_date"),
-                creator=self.config.CONFIG_CREATOR,
-                email=self.config.CONFIG_E_MAIL,
+                creator=self.config['Creator'],
+                email=self.config['E-mail'],
                 function=result.group("function"),
                 target=result.group("target")
                 )
@@ -515,11 +496,11 @@ class Checker:
             for i, line in enumerate(self.__file_content_string_list):
                 # new_line = line
                 if not expected_guard1_ok and "#ifndef" in line:
-                    if line == expected_guard1 + self.config.CONFIG_NEWLINE_CHARS:
+                    if line == expected_guard1 + self.config['Newline chars']:
                         self.debug_print_ok("Guard1 was okay")
                     else:
                         # Replace
-                        new_file = new_file.replace(line, expected_guard1 + self.config.CONFIG_NEWLINE_CHARS)
+                        new_file = new_file.replace(line, expected_guard1 + self.config['Newline chars'])
                         guard_changed = True
                         self.add_issue(i, "Header guard was wrong - line:\"{}\"".format(line))
 
@@ -527,11 +508,11 @@ class Checker:
                     continue
 
                 if not expected_guard2_ok and "#define" in line:
-                    if line == expected_guard2 + self.config.CONFIG_NEWLINE_CHARS:
+                    if line == expected_guard2 + self.config['Newline chars']:
                         self.debug_print_ok("Guard2 was okay")
                     else:
                         # Replace
-                        new_file = new_file.replace(line, expected_guard2 + self.config.CONFIG_NEWLINE_CHARS)
+                        new_file = new_file.replace(line, expected_guard2 + self.config['Newline chars'])
                         guard_changed = True
                         self.add_issue(i, "Header guard was wrong - line:\"{}\"".format(line))
 
@@ -545,11 +526,11 @@ class Checker:
             # Finished, check the last line #endif
             if saved_last_line_index >= 0:
                 line = self.__file_content_string_list[saved_last_line_index]
-                if line == expected_guard3 + self.config.CONFIG_NEWLINE_CHARS:
+                if line == expected_guard3 + self.config['Newline chars']:
                     self.debug_print_ok("Guard3 was okay")
                 else:
                     # Replace
-                    new_file = new_file.replace(line, expected_guard3 + self.config.CONFIG_NEWLINE_CHARS)
+                    new_file = new_file.replace(line, expected_guard3 + self.config['Newline chars'])
                     guard_changed = True
 
                 expected_guard3_ok = True
@@ -799,11 +780,11 @@ class Checker:
         pass
 
     def correctize_EOF(self):
-        last_chars = self.__file_content_full_string[-len(self.config.CONFIG_NEWLINE_CHARS):]
-        if last_chars != self.config.CONFIG_NEWLINE_CHARS:
+        last_chars = self.__file_content_full_string[-len(self.config['Newline chars']):]
+        if last_chars != self.config['Newline chars']:
             self.add_issue(0, "There is no correct EOF!")
-            if self.config.CONFIG_CORRECTION_ENABLED:
-                self.__new_file_string = self.__file_content_full_string + self.config.CONFIG_NEWLINE_CHARS
+            if self.config['Correction enabled']:
+                self.__new_file_string = self.__file_content_full_string + self.config['Newline chars']
             return False
 
         return True
@@ -811,130 +792,8 @@ class Checker:
 
     def type_checker(self):
         # TODO: Add type checker
+        # Maybe if it is existing types checker (e.g. uin8t_t, etc) move it to static analysis
         pass
-
-
-class Checkers:
-
-    checker_list = [
-    {
-        "name":  "CONFIG_ENCODE",
-        "default_value": "utf8"
-    },
-    {
-        "name": "ASCII checker",
-        "checker": Checker.check_ASCII,
-        "default_value": False,
-    },
-    {
-        "name": "Newline chars",
-        "default_value": "\r\n"
-    },
-    {
-        "name": "Newline checker",
-        "checker": Checker.check_newline,
-        "default_value": True
-    },
-    {
-        "name": "Tabs enabled",
-        "default_value": False
-    },
-    {
-        "name": "Tab space size",
-        "default_value": 4
-    },
-    {
-        "name": "Tabs checker",
-        "checker": Checker.check_tabs,
-        "default_value": False
-    },
-    {
-        "name": "Indent space num",
-        "default_value": 4
-    },
-    {
-        "name": "Indent checker",
-        "checker": Checker.check_indent,
-        "default_value": True
-    },
-    {
-        "name": "Trailing whitespace checker",
-        "checker": Checker.check_trailing_whitespace,
-        "default_value": True
-    },
-    {
-        "name": "Header comment checker",
-        "checker": Checker.correctize_header_comment,
-        "default_value": False
-    },
-    {
-        "name": "Include guard checker",
-        "checker": Checker.correctize_include_guard,
-        "default_value": False
-    },
-    # TODO: Checker?
-    {
-        "name": "Doxygen keywords checker",
-        "checker": Checker.correctize_doxygen_keywords,
-        "default_value": False
-    },
-    {
-        "name": "Function description comment",
-        "checker": Checker.run_refactor_function_description_comment,
-        "default_value": True
-    },
-    {
-        "name": "Refactor checker - Comment",
-        "checker": Checker.run_refactor_comment,
-        "default_value": True
-    },
-    {
-        "name": "Refactor checker - Unused argument",
-        "checker": Checker.run_refactor_unused_argument,
-        "default_value": True
-    },
-    {
-        "name": "EOF checker",
-        "checker": Checker.correctize_EOF,
-        "default_value": True
-    },
-    {
-        "name": "debug enabled",
-        "default_value": True
-    },
-    {
-        "name": "Creator",
-        "default_value": "Vizi Gabor"
-    },
-    {
-        "name": "E-mail",
-        "default_value": "vizi.gabor90@gmail.com"
-    },
-    {
-        "name": "Until first error",
-        "default_value": False
-    },
-    {
-        "name": "Correction enabled",
-        "default_value": True
-    },
-    {
-        "name": "Statistics enabled",
-        "default_value": True
-    }
-
-    # XXX: Add here the new checker
-    ]
-
-    def __init__(self):
-        # Check the list
-        for element in self.checker_list:
-            assert "name" in element.keys()
-            assert "config" in element.keys()
-            assert "checker" in element.keys()
-
-
-analyze = Checker()
 
 
 class Statistics:
@@ -1000,13 +859,131 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
     print("Finished")
 
 
+
+class CheckerConfig:
+
+    config = {
+        "ENCODE": {
+            "default_value": "utf8"
+        },
+        "ASCII checker": {
+            "checker": Checker.check_ASCII,
+            "default_value": False,
+        },
+        "Newline chars": {
+            "default_value": "\r\n"
+        },
+        "Newline checker": {
+            "checker": Checker.check_newline,
+            "default_value": True
+        },
+        "Tabs enabled": {
+            "default_value": False
+        },
+        "Tab space size": {
+            "default_value": 4
+        },
+        "Tabs checker": {
+            "checker": Checker.check_tabs,
+            "default_value": False
+        },
+        "Indent space num": {
+            "default_value": 4
+        },
+        "Indent checker": {
+            "checker": Checker.check_indent,
+            "default_value": True
+        },
+        "Trailing whitespace checker": {
+            "checker": Checker.check_trailing_whitespace,
+            "default_value": True
+        },
+        "Header comment checker": {
+            "checker": Checker.correctize_header_comment,
+            "default_value": False
+        },
+        "Include guard checker": {
+            "checker": Checker.correctize_include_guard,
+            "default_value": False
+        },
+        "Doxygen keywords checker": {
+            "checker": Checker.correctize_doxygen_keywords,
+            "default_value": False
+        },
+        "Function description comment": {
+            "checker": Checker.run_refactor_function_description_comment,
+            "default_value": True
+        },
+        "Refactor checker - Comment": {
+            "checker": Checker.run_refactor_comment,
+            "default_value": True
+        },
+        "Refactor checker - Unused argument": {
+            "checker": Checker.run_refactor_unused_argument,
+            "default_value": True
+        },
+        "EOF checker": {
+            "checker": Checker.correctize_EOF,
+            "default_value": True
+        },
+        "debug enabled": {
+            "default_value": True
+        },
+        "Creator": {
+            "default_value": "Vizi Gabor"
+        },
+        "E-mail": {
+            "default_value": "vizi.gabor90@gmail.com"
+        },
+        "Until first error": {
+            "default_value": False
+        },
+        "Correction enabled": {
+            "default_value": True
+        },
+        "Statistics enabled": {
+            "default_value": True
+        }
+
+        # XXX: Add here the new checker
+    }
+
+    def __init__(self):
+        # Check the list
+        for key, value in self.config.items():
+            assert "default_value" in value
+            # assert "checker" in element.keys()  # Not mandatory
+
+
+    def toJSON(self):
+        # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self.config, sort_keys=True, indent=4)
+
+
+    # TODO: Finish or remove
+    #def toOject(self):
+    #    config_dict = {}
+    #    [config_dict.extend({item['name']: item['default_value']}) for item in self.config]
+    #    return lambda d: namedtuple('X', self.config.keys())(*d.values()))
+
+
+# Load default configs
+config = CheckerConfig().config
+
+
+
 if __name__ == "__main__":
     # execute only if run as a script
     # Test:
     # FileAnalysis(file_path=None)
-    # TODO: Add deeper wrapper for more directories
+
     #global CONFIG_FILE_NAME
     # Check 'PIPELINE_WORKSPACE' ENV
+
+    # TODO: read config only once
+    # TODO: arguments
+    # TODO: Support for more directories
+
     is_pipeline = os.getenv("PIPELINE_WORKSPACE")
     if is_pipeline:
         project_dir = ""
