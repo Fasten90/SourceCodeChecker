@@ -11,6 +11,8 @@ stages:
 - stage: Tests
   jobs:
 
+# Needed special checkout due the 'newline' tests
+# https://blog-bertrand-thomas.devpro.fr/2021/05/26/azure-build-pipelines-protip-customize-git-checkout/
   - job: unittest
     pool:
       vmImage: 'windows-2019'
