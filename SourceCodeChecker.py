@@ -37,13 +37,8 @@ class FileIssue:
         return self.__issue
 
 
-# TODO: Improve
-def Load_UnitTest_CheckerConfig():
+def Load_UnitTest_CheckerConfig(test_config_name):
     global CONFIG_FILE_NAME
-    # Prepare the config
-    # TODO: Save but not used
-
-    test_config_name = "test\\scc_config_test.json"
 
     CONFIG_FILE_NAME = test_config_name
 
@@ -51,14 +46,24 @@ def Load_UnitTest_CheckerConfig():
 class ConfigHandler:
 
     @staticmethod
-    def SaveToFile(config):
-        # config_json = ConfigHandler.toJSON(config)
-        config_json = config.toJSON()
+    def convert_config_to_dict(config):
+        default_config_dict = {}
+        [default_config_dict.update({name: key['default_value']}) for name, key in config.items()]
+        return default_config_dict
+
+    @staticmethod
+    def toJSON(obj):
+        # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(obj, sort_keys=True, indent=4)
+
+    @staticmethod
+    def SaveToFile(ConfigObj):
+        config_obj = ConfigHandler.convert_config_to_dict(ConfigObj.config)
+        config_json = ConfigHandler.toJSON(config_obj)
         with open(CONFIG_FILE_NAME, "w") as file:
             file.write(config_json)
         print("Saved SCC config to {}".format(CONFIG_FILE_NAME))
 
-    # https://stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
     @staticmethod
     def LoadFromFile():
         # Two-step loading
@@ -111,7 +116,6 @@ class ConfigHandler:
                 log_warning('Unknown, missed value from config! "{}" Activated default value: {}'.format(key, default_value))
 
         return Configs
-
 
     @staticmethod
     def ConfigIsAvailable():
@@ -964,18 +968,8 @@ class CheckerConfig:
             assert "default_value" in value
             # assert "checker" in element.keys()  # Not mandatory
 
-
-    def toJSON(self):
-        # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-        return json.dumps(self.config, sort_keys=True, indent=4)
-
-
-    # TODO: Finish or remove
-    #def toOject(self):
-    #    config_dict = {}
-    #    [config_dict.extend({item['name']: item['default_value']}) for item in self.config]
-    #    return lambda d: namedtuple('X', self.config.keys())(*d.values()))
-
+    def get_config(self):
+        return ConfigHandler.convert_config_to_dict(self.config)
 
 # Load default configs
 config = CheckerConfig().config

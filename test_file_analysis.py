@@ -22,10 +22,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
 
 class TestFileAnalysisClass(unittest.TestCase):
 
-    def test_checkers(self):
-
-        SourceCodeChecker.Load_UnitTest_CheckerConfig()
-
+    def helper_collect_test_files(self):
         # Copy the test files, because it will be changed
         sources_from = "test" + os.sep + "Src" + os.sep
         sources_to = "test" + os.sep + "TestSrc" + os.sep
@@ -39,6 +36,13 @@ class TestFileAnalysisClass(unittest.TestCase):
 
         # Walk directories
         file_list = glob.glob(sources_to + "*.c")
+        return sources_to, file_list
+
+    def test_checkers(self):
+
+        SourceCodeChecker.Load_UnitTest_CheckerConfig("test\\scc_config_test.json")
+
+        sources_to, file_list = self.helper_collect_test_files()
 
         # Check test files
         for file_path in file_list:
@@ -233,6 +237,34 @@ void do_not_touch();
         config = SourceCodeChecker.ConfigHandler.LoadFromFile()
         config.name = value
         SourceCodeChecker.ConfigHandler.SaveToFile(config)
+
+
+    def test_existing_config_full_enabled(self):
+        SourceCodeChecker.Load_UnitTest_CheckerConfig("scc_config_full_enabled.json")
+
+        file_list = self.helper_collect_test_files()
+
+        # Check test files
+        for file_path in file_list:
+            file_analysis = SourceCodeChecker.Checker()
+            file_analysis.load(file_path)
+            file_analysis.analyze()
+            # file_analysis.print_issues() # Only for debug
+            issues = file_analysis.get_text_of_issues()
+
+
+    def test_existing_config_full_disabled(self):
+        SourceCodeChecker.Load_UnitTest_CheckerConfig("scc_config_full_disabled.json")
+
+        file_list = self.helper_collect_test_files()
+
+        # Check test files
+        for file_path in file_list:
+            file_analysis = SourceCodeChecker.Checker()
+            file_analysis.load(file_path)
+            file_analysis.analyze()
+            # file_analysis.print_issues() # Only for debug
+            issues = file_analysis.get_text_of_issues()
 
 
 if __name__ == '__main__':
