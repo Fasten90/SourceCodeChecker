@@ -50,15 +50,6 @@ def Load_UnitTest_CheckerConfig():
 
 class ConfigHandler:
 
-    # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
-    @staticmethod
-    def toJSON(config):
-        # return json.dumps(config, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-        # return json.dumps(config, sort_keys=True, indent=4)
-        # return json.dumps(config, indent=4)
-        # return json.dumps(config.__dict__, indent=4)
-        pass
-
     @staticmethod
     def SaveToFile(config):
         # config_json = ConfigHandler.toJSON(config)
@@ -77,16 +68,15 @@ class ConfigHandler:
         with open(CONFIG_FILE_NAME, "r") as file:
             config_raw = file.read()
 
-        # TODO: SUPPORT THE CONFIG
         try:
             Configs = json.loads(config_raw)
         except Exception as ex:
             # TODO: Check Exception type
-            print('Wrong JSON config. Check the syntax')
+            log_warning('Wrong JSON config. Check the syntax')
 
         print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
 
-        # TODO: Restructure for temporary
+        # Restructure default config
         default_config = CheckerConfig().config
         default_config_dict = {}
         [default_config_dict.update({name: key['default_value']}) for name, key in default_config.items()]
