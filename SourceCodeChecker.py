@@ -14,6 +14,10 @@ CONFIG_STATISTICS_ENABLED = True
 STATISTICS_DATA = None
 
 
+def log_warning(line):
+    print(line)
+
+
 class FileIssue:
 
     # Helper class for Issue administration
@@ -77,29 +81,46 @@ class ConfigHandler:
         try:
             Configs = json.loads(config_raw)
         except Exception as ex:
-            print('Wrong config')
-
-        # Classificate # TODO: Remove if not needed
-        #config = json.loads(config_raw, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+            # TODO: Check Exception type
+            print('Wrong JSON config. Check the syntax')
 
         print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
 
         # TODO: Restructure for temporary
-        config = CheckerConfig().config
-        new_config = {}
-        [new_config.update({name: key['default_value']}) for name, key in config.items()]
+        default_config = CheckerConfig().config
+        default_config_dict = {}
+        [default_config_dict.update({name: key['default_value']}) for name, key in default_config.items()]
         # Restructure
+        # From
         #         "ASCII checker": {
         #             "checker": Checker.check_ASCII,
         #             "default_value": False,
         #         },
-        # TO
+        # To
         # "ASCII checker" : false
 
-        # Check if settings missed?
-        # Print the default value
+        # Check saved config
+        for key, val in Configs.items():
+            # Check in default config
+            if key in default_config_dict:
+                # it is in the supported. Leave as is.
+                pass
+            else:
+                # Unknown settings
+                log_warning('Unknown, not supported key in the config! "{}"'.format(key))
+        # Check default config
+        for key, val in default_config_dict.items():
+            # Check in loaded configs
+            if key in Configs:
+                # it is in the supported. Leave as is.
+                pass
+            else:
+                # Unknown settings, adding
+                default_value = default_config[key]['default_value']
+                Configs.update({key: default_value})
+                log_warning('Unknown, missed value from config! "{}" Activated default value: {}'.format(key, default_value))
 
-        return new_config
+        return Configs
 
 
     @staticmethod
@@ -250,7 +271,6 @@ class Checker:
     def debug_print_ok(self, line):
         if self.config['debug enabled']:
             print(line)
-    # TODO: Add log_warning?
 
     # ----------------------------------------------------
 
