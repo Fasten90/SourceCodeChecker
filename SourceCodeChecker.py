@@ -124,7 +124,7 @@ class ConfigHandler:
 
 class Checker:
 
-    def __init__(self):
+    def __init__(self, file_path=CONFIG_FILE_NAME):
         """ Set important things """
         # Config
         self.config = CheckerConfig()
@@ -141,8 +141,7 @@ class Checker:
 
         if not file_path and not test_text:
             # Do nothing!
-            assert "Used FileAnalysis with incorrect inputs"
-            return
+            raise Exception("Used FileAnalysis with incorrect inputs")
 
         self.__issues = []
 
