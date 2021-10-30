@@ -292,7 +292,7 @@ class Checker:
 
     def check_newline(self):
         # Check every line has good newline? (and the last line too)
-        result = True
+        is_ok = True
         for i, line in self.__file_content_enumerated_list:
             # Get last characters
             last_chars = line[-len(self.config['Newline chars']) : ]
@@ -301,12 +301,40 @@ class Checker:
                 if self.config['Until first error']:
                     return False
                 else:
-                    result = False
-        return result
+                    is_ok = False
+        if not is_ok and self.config['Correction enabled']:
+            print('Correctize the newline(s)')
+            self.correct_newline()
 
+        return is_ok
+
+
+    # TODO: Can be add as new checker / correctizer, but not is can be called from check_newline(from the checker version)
     def correct_newline(self):
-        # TODO: Implement it. Shall rewrite the file, or only replace?
-        pass
+        new_file = ""
+        new_file_list = []
+        is_changed = False
+        for i, line in self.__file_content_enumerated_list:
+            # Get last characters
+            last_chars = line[-len(self.config['Newline chars']) : ]
+            if last_chars != self.config['Newline chars']:
+                is_changed = True
+                if len(self.config['Newline chars']) == 1:
+                    line = line[:-1] + self.config['Newline chars']
+                elif len(self.config['Newline chars']) == 2:
+                    if line[-2] not in self.config['Newline chars']:
+                        # E.g. Only '\n' instead of '\r\n'
+                        line = line[:-1] + self.config['Newline chars']
+                    else:
+                        # Same newline char numbers
+                        line = line[:-2] + self.config['Newline chars']
+                else:
+                    raise Exception('Required Newline chars is not supported!')
+            new_file_list.append(line)
+        new_file = ''.join(new_file_list)
+        self.__new_file_string = new_file
+        return self.__new_file_string
+
 
     def check_tabs(self):
 
@@ -338,7 +366,7 @@ class Checker:
             return result
 
     def check_trailing_whitespace(self):
-        result = True
+        is_ok = True
         for i, line in self.__file_content_enumerated_list:
             # Strip newline characters
             #line = line.rstrip(self.config['Newline chars'])
@@ -350,10 +378,27 @@ class Checker:
                 if self.config['Until first error']:
                     return False
                 else:
-                    result = False
-        return result
+                    is_ok = False
+        if not is_ok and self.config['Correction enabled']:
+            print('Trailing whitespace correction started')
+            self.correct_trailing_whitespace()
 
-    # TODO: Add remove trailing whitespace
+        return is_ok
+
+    # TODO: Can be add as new checker / correctizer, but not is can be called from check_newline(from the check_trailing_whitespace)
+    def correct_trailing_whitespace(self):
+        new_file_list = []
+        for i, line in self.__file_content_enumerated_list:
+            # Get last characters
+            while len(line) > 0 and line[-1] in self.config['Newline chars']:
+                line = line[0:-1]
+            if line != line.rstrip(" \t"):
+                # trailing whitespaces are here
+                line = line.rstrip(" \t")
+            new_file_list.append(line)
+        new_file = ''.join(new_file_list)
+        self.__new_file_string = new_file
+        return self.__new_file_string
 
     def check_indent(self):
         result = True
