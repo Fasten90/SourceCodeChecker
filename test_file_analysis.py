@@ -20,29 +20,30 @@ def copytree(src, dst, symlinks=False, ignore=None):
             shutil.copy2(s, d)
 
 
+def helper_collect_test_files():
+    # Copy the test files, because it will be changed
+    sources_from = "test" + os.sep + "Src" + os.sep
+    sources_to = "test" + os.sep + "TestSrc" + os.sep
+    # Remove + Copy
+    if os.path.isdir(sources_to):
+        shutil.rmtree(sources_to)
+    # Create
+    os.mkdir(sources_to)
+    # Copy
+    copytree(sources_from, sources_to)
+
+    # Walk directories
+    file_list = glob.glob(sources_to + "*.c")
+    return sources_to, file_list
+
+
 class TestFileAnalysisClass(unittest.TestCase):
-
-    def helper_collect_test_files(self):
-        # Copy the test files, because it will be changed
-        sources_from = "test" + os.sep + "Src" + os.sep
-        sources_to = "test" + os.sep + "TestSrc" + os.sep
-        # Remove + Copy
-        if os.path.isdir(sources_to):
-            shutil.rmtree(sources_to)
-        # Create
-        os.mkdir(sources_to)
-        # Copy
-        copytree(sources_from, sources_to)
-
-        # Walk directories
-        file_list = glob.glob(sources_to + "*.c")
-        return sources_to, file_list
 
     def test_checkers(self):
 
         SourceCodeChecker.Load_UnitTest_CheckerConfig("test\\scc_config_test.json")
 
-        sources_to, file_list = self.helper_collect_test_files()
+        sources_to, file_list = helper_collect_test_files()
 
         # Check test files
         for file_path in file_list:
@@ -79,6 +80,7 @@ class TestFileAnalysisClass(unittest.TestCase):
         print("Run {} tests".format(len(file_list)))
         print("".join("  {}\n".format(test) for test in file_list))
 
+
     def test_default_config(self):
         global CONFIG_FILE_NAME
         # Prepare the config
@@ -108,6 +110,7 @@ class TestFileAnalysisClass(unittest.TestCase):
             os.remove(original_config_name)  # This is the default file. Could be deleted
             os.rename(temporary_configname, original_config_name)
         # End
+
 
     def test_refactor_comment(self):
         # TODO: List or full file?
@@ -147,6 +150,7 @@ http://blabla.com
         # TODO: Old solution for test result checking, delete
         #assert(new_file.count("/*") == 4)
         self.assertEqual(text_expected_result.replace("\r","").replace("\n",""), new_file.replace("\r","").replace("\n",""))
+
 
     def test_refactor_notused_argument(self):
 
@@ -190,12 +194,6 @@ http://blabla.com
 
 
     def test_function_description(self):
-        # CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED
-
-        #global CONFIG_FILE_NAME
-        #original_config_file_name = SourceCodeChecker.CONFIG_FILE_NAME
-
-        #self.change_config("CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED", True)
 
         test_code = \
 """
@@ -226,12 +224,7 @@ void do_not_touch();
         # TODO: Modify the test
         new__file = new__file.replace("\r\n", "\n")
         self.assertEqual(expected, new__file)
-        #SourceCodeChecker.run_checker(dir_path=test_statistics_file_path, dir_relative=True, recursive=True)
 
-        #self.assertEqual(30, SourceCodeChecker.STATISTICS_DATA.code_line_count)
-
-        # Restore config
-        #SourceCodeChecker.CONFIG_FILE_NAME = original_config_file_name
 
     def change_config(self, name, value):
         new_test_ssc_config_path = "test" + os.sep + "scc_config_test_" + name + ".json"
@@ -245,7 +238,7 @@ void do_not_touch();
     def test_existing_config_full_enabled(self):
         SourceCodeChecker.Load_UnitTest_CheckerConfig("scc_config_full_enabled.json")
 
-        source_to, file_list = self.helper_collect_test_files()
+        source_to, file_list = helper_collect_test_files()
 
         # Check test files
         for file_path in file_list:
@@ -259,10 +252,7 @@ void do_not_touch();
     def test_existing_config_full_disabled(self):
         SourceCodeChecker.Load_UnitTest_CheckerConfig("scc_config_full_disabled.json")
 
-        #file_analysis = SourceCodeChecker.Checker()
-        #file_analysis.load(file_path=None, test_text=text)
-
-        source_to, file_list = self.helper_collect_test_files()
+        source_to, file_list = helper_collect_test_files()
 
         # Check test files
         for file_path in file_list:

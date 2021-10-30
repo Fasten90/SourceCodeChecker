@@ -217,8 +217,7 @@ class Checker:
         self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
 
     def analyze(self):
-
-        # Execute command
+        # Analyze with all required checker on one file
 
         # TODO: This is a trick: Use the original configs for look around
         new_checkers = CheckerConfig().config
@@ -624,7 +623,7 @@ class Checker:
                                       "   to\n"
                                       "   \"{}\"\n".format(line, new_line))
                 # Found, not full line: so wrong line
-            # else, dont match. anything, so it is not comment line
+            # else: does not match. anything, so it is not comment line
         if is_changed:
             self.__new_file_string = "".join(self.__file_content_string_list)
 
@@ -801,12 +800,6 @@ class Checker:
             return False
 
         return True
-
-
-    def type_checker(self):
-        # TODO: Add type checker
-        # Maybe if it is existing types checker (e.g. uin8t_t, etc) move it to static analysis
-        pass
 
 
 class Statistics:
@@ -1000,5 +993,3 @@ if __name__ == "__main__":
     run_checker(dir_path=project_dir+"Inc\\**", dir_relative=True, recursive=True)
     run_checker(dir_path=project_dir+"Drivers\\x86\\**", dir_relative=True, recursive=True)
 
-# TODO: Unittest for TAB
-# TODO: Unittest for not tab (indent!)
