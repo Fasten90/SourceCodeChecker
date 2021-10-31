@@ -287,7 +287,7 @@ void do_not_touch();
 
     def test_check_tabs_false(self):
         test_code = """\t \tExtremely mixed tabs bla\r\nbla2\r\n"""  # wrong
-        expected_update_code = """bla\r\nbla2\r\n"""
+        expected_update_code = [ '         Extremely mixed tabs bla\r\n', 'bla2\r\n' ]
         file_analysis = SourceCodeChecker.Checker()
         file_analysis.load(file_path=None, test_text=test_code)
         file_analysis.debug_set_correctize_enabled()  # Special
@@ -296,7 +296,9 @@ void do_not_touch();
 
         self.assertFalse(res)
 
-        # TODO: There is correction!
+        # correction
+        new_file = file_analysis.debug_get_new_file()
+        self.assertEqual(new_file, expected_update_code)
 
 
     def test_check_tabs_OK(self):
