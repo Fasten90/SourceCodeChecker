@@ -7,9 +7,10 @@ from re import RegexFlag
 import os
 import copy
 import json
-from collections import namedtuple
+import argparse
 
-CONFIG_FILE_NAME = "scc_config.json"
+CONFIG_FILE_DEFAULT_NAME = 'scc_config.json'
+CONFIG_FILE_EXTENSION_DEFAULT_FILTER = '*.[c|h]'
 CONFIG_STATISTICS_ENABLED = True
 STATISTICS_DATA = None
 
@@ -38,9 +39,9 @@ class FileIssue:
 
 
 def Load_UnitTest_CheckerConfig(test_config_name):
-    global CONFIG_FILE_NAME
+    global CONFIG_FILE_DEFAULT_NAME
 
-    CONFIG_FILE_NAME = test_config_name
+    CONFIG_FILE_DEFAULT_NAME = test_config_name
 
 
 class ConfigHandler:
@@ -60,17 +61,17 @@ class ConfigHandler:
     def SaveToFile(ConfigObj):
         config_obj = ConfigHandler.convert_config_to_dict(ConfigObj.config)
         config_json = ConfigHandler.toJSON(config_obj)
-        with open(CONFIG_FILE_NAME, "w") as file:
+        with open(CONFIG_FILE_DEFAULT_NAME, "w") as file:
             file.write(config_json)
-        print("Saved SCC config to {}".format(CONFIG_FILE_NAME))
+        print("Saved SCC config to {}".format(CONFIG_FILE_DEFAULT_NAME))
 
     @staticmethod
     def LoadFromFile():
         # Two-step loading
         config = None
-        print("Start load SCC config from {}".format(CONFIG_FILE_NAME))
+        print("Start load SCC config from {}".format(CONFIG_FILE_DEFAULT_NAME))
         # with open(_CONFIG_FILE_NAME, "r") as file:
-        with open(CONFIG_FILE_NAME, "r") as file:
+        with open(CONFIG_FILE_DEFAULT_NAME, "r") as file:
             config_raw = file.read()
 
         try:
@@ -79,7 +80,7 @@ class ConfigHandler:
             # TODO: Check Exception type
             log_warning('Wrong JSON config. Check the syntax')
 
-        print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
+        print("Loaded SCC config from {}".format(CONFIG_FILE_DEFAULT_NAME))
 
         # Restructure default config
         default_config = CheckerConfig().config
@@ -118,18 +119,21 @@ class ConfigHandler:
         return Configs
 
     @staticmethod
-    def ConfigIsAvailable():
-        return os.path.exists(CONFIG_FILE_NAME)
+    def ConfigIsAvailable(config_file_path):
+        return os.path.exists(config_file_path)
 
 
 class Checker:
 
-    def __init__(self, file_path=CONFIG_FILE_NAME):
-        """ Set important things """
-        # Config
+    def __init__(self, file_path=CONFIG_FILE_DEFAULT_NAME):
+        """ Set/Load configs """
+
+        self.config_file_path = file_path
+
+        # Default config
         self.config = CheckerConfig()
 
-        if ConfigHandler.ConfigIsAvailable():
+        if ConfigHandler.ConfigIsAvailable(self.config_file_path):
             self.config = ConfigHandler.LoadFromFile()
         else:
             print("Create default config")
@@ -891,25 +895,32 @@ def statistics_finish():
         print("Project has {} line codes".format(STATISTICS_DATA.code_line_count))
 
 
-def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
-    # TODO: Delete dir_relative
-    # TODO: Implement checks
-    # TODO: Implement change_mode
+def source_code_checker(source_paths=['.'], file_types='*.[c|h]',
+                        config_file_path=CONFIG_FILE_DEFAULT_NAME, recursive=True):
 
-    print("Directory: {}\n"
+    print("Directories: {}\n"
           "File types: {}".format(
-              dir_path, file_types))
+              source_paths, file_types))
 
     # Walk directories
     # glob use:<path>\**\*.c, recursive=True for subdirectory discovery
-    pattern = dir_path + os.sep + file_types
-    file_list = glob.glob(pattern, recursive=recursive)
+    file_glob_list = [source_path + os.sep + file_types for source_path in source_paths]
+    file_list = []
+    for file_glob_pattern in file_glob_list:
+        file_list.extend(glob.glob(file_glob_pattern, recursive=recursive))
 
+    # Config, settings - once
+    file_analysis = Checker(config_file_path)
+
+    # TODO: Move statistics to config related
     statistics_prepare()
 
     # Check files
+    # TODO: Export to csv/md
+    #         with open(file) as csv_file:
+    #             csv_reader = csv.reader(csv_file, delimiter=',')
+    #             for row in csv_reader:
     for file_path in file_list:
-        file_analysis = Checker()
         file_analysis.load(file_path)
         file_analysis.analyze()
         file_analysis.print_issues()
@@ -918,6 +929,8 @@ def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[]
     statistics_finish()
 
     print("Finished")
+
+    return True
 
 
 
@@ -1023,28 +1036,62 @@ config = CheckerConfig().config
 
 
 
-if __name__ == "__main__":
-    # execute only if run as a script
-    # Test:
-    # FileAnalysis(file_path=None)
 
-    #global CONFIG_FILE_NAME
-    # Check 'PIPELINE_WORKSPACE' ENV
+def main():
+    parser = argparse.ArgumentParser(description='SourceCodeChecker')
 
-    # TODO: read config only once
-    # TODO: arguments
-    # TODO: Support for more directories
+    cwd = os.getcwd()
+
+    parser.add_argument('--project-path', required=False, type=str,
+                        default=cwd,
+                        help='path for project root. It should be directory, it can be relative or absolute path\n'
+                             'Default is the cwd')
+
+    parser.add_argument('--is-pipeline', required=False, action='store_true',
+                        default=False,
+                        help='Is it pipeline? It used for default values')
+
+    parser.add_argument('--source-file-path', required=True, type=str,
+                        help='Source(s) file(s) path, what shall be the checker analyzed.\n'
+                             'It shall be relative "path filter" from the project-path.\n'
+                             '  E.g. Scr\\**,Inc\\**')
+
+    parser.add_argument('--file-extension-filter', required=False, type=str,
+                        default=CONFIG_FILE_EXTENSION_DEFAULT_FILTER,
+                        help='File filter in regex format.\n'
+                             '  E.g. [*.c|h]')
+
+    parser.add_argument('--config-file-path', required=False, type=str,
+                        default=CONFIG_FILE_DEFAULT_NAME,
+                        help='Config file path. It shall be relative path from project-path\n'
+                             'Recommended name: scc_config.json')
+
+    args = parser.parse_args()
 
     is_pipeline = os.getenv("PIPELINE_WORKSPACE")
     if is_pipeline:
-        project_dir = ""
-        print("Run on pipeline: '{}'".format(project_dir))
-    else:
-        project_dir = "..\\..\\AtollicWorkspace\\FastenHomeAut\\"
-        print("Run on local: '{}'".format(project_dir))
+        # Override the argument
+        args.is_pipeline = True
 
-    CONFIG_FILE_NAME = project_dir + "scc_config.json"
-    run_checker(dir_path=project_dir+"Src\\**", dir_relative=True, recursive=True)
-    run_checker(dir_path=project_dir+"Inc\\**", dir_relative=True, recursive=True)
-    run_checker(dir_path=project_dir+"Drivers\\x86\\**", dir_relative=True, recursive=True)
+    if not os.path.isabs(args.project_path):
+        args.project_path = os.path.join(cwd, args.project_path)
+    if not os.path.exists(args.project_path):
+        raise Exception('The project-path argument does not exist!')
+    if not os.path.isdir(args.project_path):
+        raise Exception('The project-path argument is not a directory!')
+
+    args.config_file_path = os.path.join(args.project_path, args.config_file_path)
+    if not os.path.exists(args.config_file_path):
+        raise Exception('The config-file-path argument is not exist!')
+
+    source_filter_list = args.source_file_path.split(',')
+    source_list = [os.path.join(args.project_path, item) for item in source_filter_list]
+
+    value_result_list = source_code_checker(source_paths=source_list,
+                                            file_types=args.file_extension_filter,
+                                            config_file_path=args.config_file_path)
+
+
+if __name__ == '__main__':
+    main()
 

@@ -84,8 +84,8 @@ class TestFileAnalysisClass(unittest.TestCase):
     def test_default_config(self):
         global CONFIG_FILE_NAME
         # Prepare the config
-        original_config_name = SourceCodeChecker.CONFIG_FILE_NAME
-        temporary_configname = SourceCodeChecker.CONFIG_FILE_NAME + "_temp"
+        original_config_name = SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME
+        temporary_configname = SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME + "_temp"
 
         # Prepare: Delete the temp if need
         if os.path.exists(temporary_configname):
@@ -180,8 +180,8 @@ http://blabla.com
 
         # Save + set config
         global CONFIG_FILE_NAME
-        original_config_file_name = SourceCodeChecker.CONFIG_FILE_NAME
-        SourceCodeChecker.CONFIG_FILE_NAME = "test" + os.sep + "scc_config_test_statistics.json"
+        original_config_file_name = SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME
+        SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME = "test" + os.sep + "scc_config_test_statistics.json"
 
         test_statistics_file_path = "test" + os.sep + "StatisticsTestProject" + os.sep + "**"
 
@@ -190,7 +190,7 @@ http://blabla.com
         self.assertEqual(32, SourceCodeChecker.STATISTICS_DATA.code_line_count)
 
         # Restore config
-        SourceCodeChecker.CONFIG_FILE_NAME = original_config_file_name
+        SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME = original_config_file_name
 
 
     def test_function_description(self):
@@ -349,7 +349,7 @@ void do_not_touch();
 
     def change_config(self, name, value):
         new_test_ssc_config_path = "test" + os.sep + "scc_config_test_" + name + ".json"
-        SourceCodeChecker.CONFIG_FILE_NAME = new_test_ssc_config_path
+        SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME = new_test_ssc_config_path
 
         config = SourceCodeChecker.ConfigHandler.LoadFromFile()
         config.name = value
