@@ -41,13 +41,16 @@ class TestFileAnalysisClass(unittest.TestCase):
 
     def test_checkers(self):
 
-        SourceCodeChecker.Load_UnitTest_CheckerConfig("test\\scc_config_test.json")
+        TEST_CONFIG_FILE = 'test\\scc_config_test.json'
 
         sources_to, file_list = helper_collect_test_files()
 
+        # Configs
+        file_analysis = SourceCodeChecker.Checker(file_path=TEST_CONFIG_FILE)
+
         # Check test files
         for file_path in file_list:
-            file_analysis = SourceCodeChecker.Checker()
+            # Load + check file
             file_analysis.load(file_path)
             file_analysis.analyze()
             # file_analysis.print_issues() # Only for debug
@@ -95,11 +98,12 @@ class TestFileAnalysisClass(unittest.TestCase):
         if os.path.exists(original_config_name):
             os.rename(original_config_name, temporary_configname)
 
+        # Crosscheck to is it moved correctly?
         assert(not os.path.exists(original_config_name))
 
         # SourceCodeChecker.CONFIG_FILE_NAME = temporary_configname
         # make Analysis for checking, did it create the config?
-        file_analysis = SourceCodeChecker.Checker()
+        file_analysis = SourceCodeChecker.Checker(original_config_name)
         #file_analysis.load() # Not used because only the init shall executed
 
         # Shall exists
@@ -178,19 +182,15 @@ http://blabla.com
 
     def test_statistics(self):
 
-        # Save + set config
-        global CONFIG_FILE_NAME
-        original_config_file_name = SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME
-        SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME = "test" + os.sep + "scc_config_test_statistics.json"
+        test_config_file = 'test/scc_config_test_statistics.json'
 
         test_statistics_file_path = "test" + os.sep + "StatisticsTestProject" + os.sep + "**"
-
-        SourceCodeChecker.run_checker(dir_path=test_statistics_file_path, dir_relative=True, recursive=True)
+        SourceCodeChecker.source_code_checker(source_paths=test_statistics_file_path,
+                                              file_types='*.[c|h]',
+                                              config_file_path=test_config_file,
+                                              recursive=True)
         # 11 + 21 line count in the file
         self.assertEqual(32, SourceCodeChecker.STATISTICS_DATA.code_line_count)
-
-        # Restore config
-        SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME = original_config_file_name
 
 
     def test_function_description(self):
@@ -347,23 +347,14 @@ void do_not_touch();
     #    self.assertEqual(expected, new__file)
 
 
-    def change_config(self, name, value):
-        new_test_ssc_config_path = "test" + os.sep + "scc_config_test_" + name + ".json"
-        SourceCodeChecker.CONFIG_FILE_DEFAULT_NAME = new_test_ssc_config_path
-
-        config = SourceCodeChecker.ConfigHandler.LoadFromFile()
-        config.name = value
-        SourceCodeChecker.ConfigHandler.SaveToFile(config)
-
-
     def test_existing_config_full_enabled(self):
-        SourceCodeChecker.Load_UnitTest_CheckerConfig("scc_config_full_enabled.json")
+        test_config_file = 'scc_config_full_enabled.json'
 
         source_to, file_list = helper_collect_test_files()
 
         # Check test files
         for file_path in file_list:
-            file_analysis = SourceCodeChecker.Checker()
+            file_analysis = SourceCodeChecker.Checker(test_config_file)
             file_analysis.load(file_path)
             file_analysis.analyze()
             # file_analysis.print_issues() # Only for debug
@@ -371,13 +362,13 @@ void do_not_touch();
 
 
     def test_existing_config_full_disabled(self):
-        SourceCodeChecker.Load_UnitTest_CheckerConfig("scc_config_full_disabled.json")
+        test_config_file = 'scc_config_full_disabled.json'
 
         source_to, file_list = helper_collect_test_files()
 
         # Check test files
         for file_path in file_list:
-            file_analysis = SourceCodeChecker.Checker("scc_config_full_disabled.json")
+            file_analysis = SourceCodeChecker.Checker(test_config_file)
             file_analysis.load(file_path)
             file_analysis.analyze()
             # file_analysis.print_issues() # Only for debug

@@ -38,12 +38,6 @@ class FileIssue:
         return self.__issue
 
 
-def Load_UnitTest_CheckerConfig(test_config_name):
-    global CONFIG_FILE_DEFAULT_NAME
-
-    CONFIG_FILE_DEFAULT_NAME = test_config_name
-
-
 class ConfigHandler:
 
     @staticmethod
@@ -156,6 +150,8 @@ class Checker:
                 self.__file_content_string_list = test_text
             elif isinstance(test_text, str):
                 self.__file_content_string_list = test_text.splitlines(keepends=True)
+            else:
+                raise Exception('test_text type is wrong!')
             # Update new file will fill the other string values
             self.__update_new_file()
             # Test name:
@@ -904,7 +900,12 @@ def source_code_checker(source_paths=['.'], file_types='*.[c|h]',
 
     # Walk directories
     # glob use:<path>\**\*.c, recursive=True for subdirectory discovery
-    file_glob_list = [source_path + os.sep + file_types for source_path in source_paths]
+    if isinstance(source_paths, list):
+        file_glob_list = [source_path + os.sep + file_types for source_path in source_paths]
+    elif isinstance(source_paths, str):
+        file_glob_list = [source_paths + os.sep + file_types]
+    else:
+        raise Exception('Wrong source_path type!')
     file_list = []
     for file_glob_pattern in file_glob_list:
         file_list.extend(glob.glob(file_glob_pattern, recursive=recursive))
