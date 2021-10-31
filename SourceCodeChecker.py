@@ -1077,13 +1077,13 @@ def main():
     if not os.path.isabs(args.project_path):
         args.project_path = os.path.join(cwd, args.project_path)
     if not os.path.exists(args.project_path):
-        raise Exception('The project-path argument does not exist!')
+        raise Exception('The point of project-path argument does not exist!')
     if not os.path.isdir(args.project_path):
         raise Exception('The project-path argument is not a directory!')
 
     args.config_file_path = os.path.join(args.project_path, args.config_file_path)
     if not os.path.exists(args.config_file_path):
-        raise Exception('The config-file-path argument is not exist!')
+        raise Exception('The file as given at config-file-path argument does not exist!')
 
     source_filter_list = args.source_file_path.split(',')
     source_list = [os.path.join(args.project_path, item) for item in source_filter_list]
