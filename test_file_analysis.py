@@ -226,6 +226,125 @@ void do_not_touch();
         self.assertEqual(expected, new__file)
 
 
+    # TODO: Test
+    #  Implement newline
+    #  trailing whitespace correctizer
+    #  TAB
+    #  not tab (indent!)
+
+
+    def test_check_newline_false(self):
+        test_code = """bla\nbla2\n"""  # wrong
+        expected_update_code = """bla\r\nbla2\r\n"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+        file_analysis.debug_set_correctize_enabled()  # Special
+
+        res = file_analysis.check_newline()
+
+        self.assertFalse(res)
+
+        # correct_newline
+        new_file = file_analysis.debug_get_new_file()
+        self.assertEqual(expected_update_code, new_file)
+
+
+    def test_check_newline_OK(self):
+        test_code = """bla\r\nbla2\r\n"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+
+        res = file_analysis.check_newline()
+
+        self.assertTrue(res)
+
+
+    def test_check_trailing_whitespace_false(self):
+        test_code = """bla  \r\nbla2\r\n"""  # wrong
+        expected_update_code = """bla\r\nbla2\r\n"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+        file_analysis.debug_set_correctize_enabled()  # Special
+
+        res = file_analysis.check_trailing_whitespace()
+
+        self.assertFalse(res)
+
+        # correct_trailing_whitespace
+        new_file = file_analysis.debug_get_new_file()
+        self.assertEqual(expected_update_code, new_file)
+
+
+    def test_check_trailing_whitespace_OK(self):
+        test_code = """bla\r\nbla2\r\n"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+
+        res = file_analysis.check_trailing_whitespace()
+
+        self.assertTrue(res)
+
+
+    def test_check_tabs_false(self):
+        test_code = """\t \tExtremely mixed tabs bla\r\nbla2\r\n"""  # wrong
+        expected_update_code = """bla\r\nbla2\r\n"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+        file_analysis.debug_set_correctize_enabled()  # Special
+
+        res = file_analysis.check_tabs()
+
+        self.assertFalse(res)
+
+        # TODO: There is correction!
+
+
+    def test_check_tabs_OK(self):
+        # TODO: Maybe the default case is the tabs disabled?
+        # test_code = """\t\tbla\r\nbla2\r\n"""
+        test_code = """        bla\r\nbla2\r\n"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+
+        res = file_analysis.check_tabs()
+
+        self.assertTrue(res)
+
+
+    def test_check_indent_false(self):
+        test_code = """   Extremely wrong indent bla\r\nbla2\r\n"""  # wrong
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+        file_analysis.debug_set_correctize_enabled()  # Special
+
+        res = file_analysis.check_indent()
+
+        self.assertFalse(res)
+
+        # No correction
+
+
+    def test_check_indent_OK(self):
+        test_code = """    bla\r\nbla2\r\n"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+
+        res = file_analysis.check_indent()
+
+        self.assertTrue(res)
+
+
+    #def test_correctize(self):
+    #    file_analysis = SourceCodeChecker.Checker()
+    #    file_analysis.load(file_path=None, test_text=test_code)
+
+    #    res = file_analysis.check_newline()
+
+    #    new__file = file_analysis.debug_get_new_file()
+    #    new__file = new__file.replace("\r\n", "\n")
+    #    self.assertEqual(expected, new__file)
+
+
     def change_config(self, name, value):
         new_test_ssc_config_path = "test" + os.sep + "scc_config_test_" + name + ".json"
         SourceCodeChecker.CONFIG_FILE_NAME = new_test_ssc_config_path

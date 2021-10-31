@@ -148,7 +148,11 @@ class Checker:
         if not file_path:
             # This was necessary for test text and not a file
             print("Test mode")
-            self.__file_content_string_list = test_text
+            if isinstance(test_text, list):
+                self.__file_content_string_list = test_text
+            elif isinstance(test_text, str):
+                self.__file_content_string_list = test_text.splitlines(keepends=True)
+            # Update new file will fill the other string values
             self.__update_new_file()
             # Test name:
             self.__file_path = "TestText_NotAFile"
@@ -187,7 +191,7 @@ class Checker:
 
     def update_changed_file(self):
         if self.__new_file_string != "":
-            if isinstance(self.__new_file_string, (list)):
+            if isinstance(self.__new_file_string, list):
                 # List
                 self.__file_content_string_list = self.__new_file_string
             else:
@@ -269,6 +273,9 @@ class Checker:
     def debug_get_new_file(self):
         return self.__new_file_string
 
+    def debug_set_correctize_enabled(self):
+        self.config['Correction enabled'] = True
+
     # ----------------------------------------------------
 
     def check_ASCII(self):
@@ -304,6 +311,8 @@ class Checker:
                     is_ok = False
         if not is_ok and self.config['Correction enabled']:
             print('Correctize the newline(s)')
+            # TODO: Due the enumerates, it shall be restarted?
+            self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
             self.correct_newline()
 
         return is_ok
@@ -311,7 +320,6 @@ class Checker:
 
     # TODO: Can be add as new checker / correctizer, but not is can be called from check_newline(from the checker version)
     def correct_newline(self):
-        new_file = ""
         new_file_list = []
         is_changed = False
         for i, line in self.__file_content_enumerated_list:
@@ -381,6 +389,8 @@ class Checker:
                     is_ok = False
         if not is_ok and self.config['Correction enabled']:
             print('Trailing whitespace correction started')
+            # TODO: "restart" file
+            self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
             self.correct_trailing_whitespace()
 
         return is_ok
@@ -395,7 +405,7 @@ class Checker:
             if line != line.rstrip(" \t"):
                 # trailing whitespaces are here
                 line = line.rstrip(" \t")
-            new_file_list.append(line)
+            new_file_list.append(line + self.config['Newline chars'])
         new_file = ''.join(new_file_list)
         self.__new_file_string = new_file
         return self.__new_file_string
@@ -836,7 +846,7 @@ class Checker:
         # self.__new_file_string = regex_text_from.sub(r'\1CONFIG_MODULE_', self.__file_content_full_string)
         pass
 
-    def correctize_EOF(self):
+    def checker_EOF(self):
         last_chars = self.__file_content_full_string[-len(self.config['Newline chars']):]
         if last_chars != self.config['Newline chars']:
             self.add_issue(0, "There is no correct EOF!")
@@ -921,6 +931,10 @@ class CheckerConfig:
             "checker": Checker.check_ASCII,
             "default_value": False,
         },
+        "EOF checker": {  # It is important to EOF checker shall be upper than newline checker due the missing EOF is newline issue also
+            "checker": Checker.checker_EOF,
+            "default_value": True
+        },
         "Newline chars": {
             "default_value": "\r\n"
         },
@@ -973,10 +987,6 @@ class CheckerConfig:
             "checker": Checker.run_refactor_unused_argument,
             "default_value": True
         },
-        "EOF checker": {
-            "checker": Checker.correctize_EOF,
-            "default_value": True
-        },
         "debug enabled": {
             "default_value": True
         },
@@ -990,7 +1000,7 @@ class CheckerConfig:
             "default_value": False
         },
         "Correction enabled": {
-            "default_value": True
+            "default_value": False
         },
         "Statistics enabled": {
             "default_value": True
