@@ -10,3 +10,4 @@ test/TestSrc
 
 # Export files
 *.log
+/source_code_checker_issues.csv

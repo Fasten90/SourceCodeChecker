@@ -8,11 +8,13 @@ import os
 import copy
 import json
 import argparse
+import csv
 
 CONFIG_FILE_DEFAULT_NAME = 'scc_config.json'
 CONFIG_FILE_EXTENSION_DEFAULT_FILTER = '*.[c|h]'
 CONFIG_STATISTICS_ENABLED = True
 STATISTICS_DATA = None
+CONFIG_FILE_ISSUE_EXPORT_DEFAULT_NAME = 'source_code_checker_issues.csv'
 
 
 def log_warning(line):
@@ -36,6 +38,9 @@ class FileIssue:
 
     def get_text(self):
         return self.__issue
+
+    def get_issue_in_list(self):
+        return [self.__file_path, self.__line_number, self.__issue]
 
 
 class ConfigHandler:
@@ -255,6 +260,9 @@ class Checker:
     def print_issues(self):
         for issue in self.__issues:
             issue.print_issue()
+
+    def get_issues(self):
+        return [issue.get_issue_in_list() for issue in self.__issues]
 
     def get_text_of_issues(self):
         text = ""
@@ -916,23 +924,21 @@ def source_code_checker(source_paths=['.'], file_types='*.[c|h]',
     # TODO: Move statistics to config related
     statistics_prepare()
 
+    all_issues_list = []
+
     # Check files
-    # TODO: Export to csv/md
-    #         with open(file) as csv_file:
-    #             csv_reader = csv.reader(csv_file, delimiter=',')
-    #             for row in csv_reader:
     for file_path in file_list:
         file_analysis.load(file_path)
         file_analysis.analyze()
         file_analysis.print_issues()
+        all_issues_list.extend(file_analysis.get_issues())
         statistics_file_code_line(file_analysis.get_code_lines_count(), file_analysis.get_file_name())
 
     statistics_finish()
 
-    print("Finished")
+    print("Finished analysis")
 
-    return True
-
+    return all_issues_list
 
 
 class CheckerConfig:
@@ -1032,10 +1038,13 @@ class CheckerConfig:
     def get_config(self):
         return ConfigHandler.convert_config_to_dict(self.config)
 
-# Load default configs
-config = CheckerConfig().config
 
-
+def export_issues(issues, csv_file_path=CONFIG_FILE_ISSUE_EXPORT_DEFAULT_NAME):
+    print('Export issues to {}'.format(csv_file_path))
+    with open(csv_file_path, 'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter=',')
+        for row in issues:
+            csv_writer.writerow(row)
 
 
 def main():
@@ -1067,6 +1076,10 @@ def main():
                         help='Config file path. It shall be relative path from project-path\n'
                              'Recommended name: scc_config.json')
 
+    parser.add_argument('--export-csv-file-path', required=False, type=str,
+                        default=CONFIG_FILE_ISSUE_EXPORT_DEFAULT_NAME,
+                        help='Export CSV file path where the issues are exported')
+
     args = parser.parse_args()
 
     is_pipeline = os.getenv("PIPELINE_WORKSPACE")
@@ -1091,6 +1104,8 @@ def main():
     value_result_list = source_code_checker(source_paths=source_list,
                                             file_types=args.file_extension_filter,
                                             config_file_path=args.config_file_path)
+
+    export_issues(value_result_list, args.export_csv_file_path)
 
 
 if __name__ == '__main__':
