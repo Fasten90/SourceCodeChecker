@@ -1094,11 +1094,11 @@ def main():
     source_filter_list = args.source_file_path.split(',')
     source_list = [os.path.join(args.project_path, item) for item in source_filter_list]
 
-    value_result_list = source_code_checker(source_paths=source_list,
+    all_issues_list, statistics_data = source_code_checker(source_paths=source_list,
                                             file_types=args.file_extension_filter,
                                             config_file_path=args.config_file_path)
 
-    export_issues(value_result_list, args.export_csv_file_path)
+    export_issues(all_issues_list, args.export_csv_file_path)
 
 
 if __name__ == '__main__':
