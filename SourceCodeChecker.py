@@ -7,14 +7,19 @@ from re import RegexFlag
 import os
 import copy
 import json
-from collections import namedtuple
+import argparse
+import csv
 
-CONFIG_FILE_NAME = "scc_config.json"
-CONFIG_STATISTICS_ENABLED = True
-STATISTICS_DATA = None
+CONFIG_FILE_DEFAULT_NAME = 'scc_config.json'
+CONFIG_FILE_EXTENSION_DEFAULT_FILTER = '*.[c|h]'
+CONFIG_FILE_ISSUE_EXPORT_DEFAULT_NAME = 'source_code_checker_issues.csv'
 
 
-class FileIssue():
+def log_warning(line):
+    print(line)
+
+
+class FileIssue:
 
     # Helper class for Issue administration
     def __init__(self, file_path, line_number, issue):
@@ -32,141 +37,125 @@ class FileIssue():
     def get_text(self):
         return self.__issue
 
+    def get_issue_in_list(self):
+        return [self.__file_path, self.__line_number, self.__issue]
 
-class FileAnalysisConfig():
 
-    def __init__(self):
+class ConfigHandler:
 
-        # TODO: Make a config for set these
-        self.CONFIG_ENCODE = "utf8"
+    @staticmethod
+    def convert_config_to_dict(config):
+        default_config_dict = {}
+        [default_config_dict.update({name: key['default_value']}) for name, key in config.items()]
+        return default_config_dict
 
-        self.CONFIG_TABS_ENABLED = False
-        self.CONFIG_TABS_CHECKER_ENABLED = False
-
-        self.CONFIG_ASCII_CHECKER_ENABLED = False
-
-        self.CONFIG_NEWLINE_CHECKER_ENABLED = True
-        self.CONFIG_NEWLINE_CHARS = "\r\n"
-
-        self.CONFIG_INDENT_SPACE_NUM = 4
-        self.CONFIG_INDENT_CHECKER_IS_ENABLED = True
-
-        self.CONFIG_TAB_SPACE_SIZE = 4
-
-        self.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED = True
-
-        self.CONFIG_CORRECTIZE_HEADER_ENABLED = False
-
-        self.CONFIG_CORRECTIZE_INCLUDE_GUARD = False
-
-        self.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED = False
-
-        self.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED = True
-
-        self.CONFIG_RUN_REFACTOR_COMMENT_ENABLED = True
-
-        self.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED = True
-
-        self.CONFIG_CREATOR = "Vizi Gabor"
-        self.CONFIG_E_MAIL = "vizi.gabor90@gmail.com"
-
-        # TODO: Add "until one error" / "check all file" mode
-        self.CONFIG_UNTIL_FIRST_ERROR = False
-
-        self.CONFIG_CORRECTION_ENABLED = True
-
-        self.CONFIG_EOF_MANDATORY_ENABLED = True
-
-        # self.CONFIG_STATISTICS_ENABLED = True
-
-        self.debug_enabled = True
-
-    def toJSON(self):
+    @staticmethod
+    def toJSON(obj):
         # return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-        return json.dumps(self.__dict__, sort_keys=True, indent=4)
-
-
-def LoadTestConfig():
-    global CONFIG_FILE_NAME
-    # Prepare the config
-    # TODO: Save but not used
-    #original_config_name = CONFIG_FILE_NAME
-
-    test_config_name = "test\\scc_config_test.json"
-
-    CONFIG_FILE_NAME = test_config_name
-
-
-class ConfigHandler():
-
-    # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
-    @staticmethod
-    def toJSON(config):
-        # return json.dumps(config, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-        # return json.dumps(config, sort_keys=True, indent=4)
-        # return json.dumps(config, indent=4)
-        # return json.dumps(config.__dict__, indent=4)
-        pass
+        return json.dumps(obj, sort_keys=True, indent=4)
 
     @staticmethod
-    def SaveToFile(config):
-        # config_json = ConfigHandler.toJSON(config)
-        config_json = config.toJSON()
-        with open(CONFIG_FILE_NAME, "w") as file:
+    def SaveToFile(ConfigObj):
+        config_obj = ConfigHandler.convert_config_to_dict(ConfigObj.config)
+        config_json = ConfigHandler.toJSON(config_obj)
+        with open(CONFIG_FILE_DEFAULT_NAME, "w") as file:
             file.write(config_json)
-        print("Saved SCC config to {}".format(CONFIG_FILE_NAME))
+        print("Saved SCC config to {}".format(CONFIG_FILE_DEFAULT_NAME))
 
-    # https://stackoverflow.com/questions/6578986/how-to-convert-json-data-into-a-python-object
     @staticmethod
     def LoadFromFile():
         # Two-step loading
         config = None
-        print("Start load SCC config from {}".format(CONFIG_FILE_NAME))
+        print("Start load SCC config from {}".format(CONFIG_FILE_DEFAULT_NAME))
         # with open(_CONFIG_FILE_NAME, "r") as file:
-        with open(CONFIG_FILE_NAME, "r") as file:
-            config = file.read()
+        with open(CONFIG_FILE_DEFAULT_NAME, "r") as file:
+            config_raw = file.read()
 
-        # self = json.loads(config)
-        config = json.loads(config, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+        try:
+            Configs = json.loads(config_raw)
+        except Exception as ex:
+            # TODO: Check Exception type
+            log_warning('Wrong JSON config. Check the syntax')
 
-        print("Loaded SCC config from {}".format(CONFIG_FILE_NAME))
+        print("Loaded SCC config from {}".format(CONFIG_FILE_DEFAULT_NAME))
 
-        return config
-        # o.__dict__ = config
+        # Restructure default config
+        default_config = CheckerConfig().config
+        default_config_dict = {}
+        [default_config_dict.update({name: key['default_value']}) for name, key in default_config.items()]
+        # Restructure
+        # From
+        #         "ASCII checker": {
+        #             "checker": Checker.check_ASCII,
+        #             "default_value": False,
+        #         },
+        # To
+        # "ASCII checker" : false
 
-        # obj2_dict = simplejson.loads(config)
-        # obj2 = MyCustom.from_json(obj2_dict)
+        # Check saved config
+        for key, val in Configs.items():
+            # Check in default config
+            if key in default_config_dict:
+                # it is in the supported. Leave as is.
+                pass
+            else:
+                # Unknown settings
+                log_warning('Unknown, not supported key in the config! "{}"'.format(key))
+        # Check default config
+        for key, val in default_config_dict.items():
+            # Check in loaded configs
+            if key in Configs:
+                # it is in the supported. Leave as is.
+                pass
+            else:
+                # Unknown settings, adding
+                default_value = default_config[key]['default_value']
+                Configs.update({key: default_value})
+                log_warning('Unknown, missed value from config! "{}" Activated default value: {}'.format(key, default_value))
+
+        return Configs
 
     @staticmethod
-    def ConfigIsAvailable():
-        return os.path.exists(CONFIG_FILE_NAME)
+    def ConfigIsAvailable(config_file_path):
+        return os.path.exists(config_file_path)
 
 
-class FileAnalysis():
+class Checker:
 
-    def __init__(self, file_path, test_text=None):
-        """ Read the file """
+    def __init__(self, file_path=CONFIG_FILE_DEFAULT_NAME):
+        """ Set/Load configs """
 
-        # Config
-        self.config = FileAnalysisConfig()
+        self.config_file_path = file_path
 
-        if ConfigHandler.ConfigIsAvailable():
+        # Default config
+        self.config = CheckerConfig()
+
+        if ConfigHandler.ConfigIsAvailable(self.config_file_path):
             self.config = ConfigHandler.LoadFromFile()
         else:
             print("Create default config")
             ConfigHandler.SaveToFile(self.config)
 
+
+    def load(self, file_path, test_text=None):
+        """ Read the file """
+
         if not file_path and not test_text:
             # Do nothing!
-            assert "Used FileAnalysis with incorrect inputs"
-            return
+            raise Exception("Used FileAnalysis with incorrect inputs")
 
         self.__issues = []
 
         if not file_path:
             # This was necessary for test text and not a file
             print("Test mode")
-            self.__file_content_string_list = test_text
+            if isinstance(test_text, list):
+                self.__file_content_string_list = test_text
+            elif isinstance(test_text, str):
+                self.__file_content_string_list = test_text.splitlines(keepends=True)
+            else:
+                raise Exception('test_text type is wrong!')
+            # Update new file will fill the other string values
             self.__update_new_file()
             # Test name:
             self.__file_path = "TestText_NotAFile"
@@ -184,7 +173,7 @@ class FileAnalysis():
         print("Check file: {}".format(self.__file_path))
 
         # file = open(file_path,'rt')
-        file = codecs.open(self.__file_path, 'r', encoding=self.config.CONFIG_ENCODE)
+        file = codecs.open(self.__file_path, 'r', encoding=self.config['ENCODE'])
 
         # Read entire file
         try:
@@ -193,7 +182,7 @@ class FileAnalysis():
             # print("File encode is OK")
             self.__update_new_file()
         except UnicodeDecodeError:
-            self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
+            self.add_issue(0, "Not {} encoded".format(self.config['ENCODE']))
 
         file.close()
 
@@ -205,7 +194,7 @@ class FileAnalysis():
 
     def update_changed_file(self):
         if self.__new_file_string != "":
-            if isinstance(self.__new_file_string, (list)):
+            if isinstance(self.__new_file_string, list):
                 # List
                 self.__file_content_string_list = self.__new_file_string
             else:
@@ -213,8 +202,8 @@ class FileAnalysis():
                 # Note: be careful - hold the newlines!
                 self.__file_content_string_list = self.__new_file_string.splitlines(keepends=True)
                 # self.__file_content_string_list = []
-                # self.__file_content_string_list.append(line + self.config.CONFIG_NEWLINE_CHARS for line in self.__new_file_string.splitlines())
-            file = codecs.open(self.__file_path, 'w', encoding=self.config.CONFIG_ENCODE)
+                # self.__file_content_string_list.append(line + self.config['Newline chars'] for line in self.__new_file_string.splitlines())
+            file = codecs.open(self.__file_path, 'w', encoding=self.config['ENCODE'])
             file.writelines(self.__new_file_string)
             file.close()
             print("Updated file: {}".format(self.__file_path))
@@ -231,99 +220,34 @@ class FileAnalysis():
             print(("ERROR! Problem with update new file! {}".format(str(e))))
             raise e
         self.__file_content_full_string = "".join(self.__file_content_string_list)
-        # self.__file_content_full_string = "".join((line + self.config.CONFIG_NEWLINE_CHARS) for line in self.__file_content_string_list)
+        # self.__file_content_full_string = "".join((line + self.config['Newline chars']) for line in self.__file_content_string_list)
         self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
 
     def analyze(self):
+        # Analyze with all required checker on one file
 
-        analyze_list = [
-            {
-                "name": "ASCII checker",
-                "config": self.config.CONFIG_ASCII_CHECKER_ENABLED,
-                "checker": self.check_ASCII
-            },
-            {
-                "name": "Newline checker",
-                "config": self.config.CONFIG_NEWLINE_CHECKER_ENABLED,
-                "checker": self.check_newline
-            },
-            {
-                "name": "Tabs checker",
-                "config": self.config.CONFIG_TABS_CHECKER_ENABLED,
-                "checker": self.check_tabs
-            },
-            {
-                "name": "Indent checker",
-                "config": self.config.CONFIG_INDENT_CHECKER_IS_ENABLED,
-                "checker": self.check_indent
-            },
-            {
-                "name": "Trailing whitespace checker",
-                "config": self.config.CONFIG_TRAILING_WHITESPACE_CHECKER_ENABLED,
-                "checker": self.check_trailing_whitespace
-            },
-            {
-                "name": "Header comment checker",
-                "config": self.config.CONFIG_CORRECTIZE_HEADER_ENABLED,
-                "checker": self.correctize_header_comment
-            },
-            {
-                "name": "Include guard checker",
-                "config": self.config.CONFIG_CORRECTIZE_INCLUDE_GUARD,
-                "checker": self.correctize_include_guard
-            },
-            {
-                "name": "Doxygen keywords checker",
-                "config": self.config.CONFIG_CORRECTIZE_DOXYGEN_KEYWORDS_ENABLED,
-                "checker": self.correctize_doxygen_keywords
-            },
-            {
-                "name": "Function description comment",
-                "config": self.config.CONFIG_CORRECTIZE_FUNCTION_DESCRIPTION_COMMENTS_ENABLED,
-                "checker": self.run_refactor_function_description_comment
-            },
-            {
-                "name": "Refactor checker - Comment",
-                "config": self.config.CONFIG_RUN_REFACTOR_COMMENT_ENABLED,
-                "checker": self.run_refactor_comment
-            },
-            {
-                "name": "Refactor checker - Unused argument",
-                "config": self.config.CONFIG_RUN_REFACTOR_UNUSED_ARGUMENT_ENABLED,
-                "checker": self.run_refactor_unused_argument
-            },
-            {
-                "name": "EOF checker",
-                "config": self.config.CONFIG_EOF_MANDATORY_ENABLED,
-                "checker": self.correctize_EOF
-            },
-            ]
+        # TODO: This is a trick: Use the original configs for look around
+        new_checkers = CheckerConfig().config
+        for checker_name, checker_dict in new_checkers.items():
+            if 'checker' not in checker_dict:
+                # This is a config and not a checker
+                continue
 
-        # TODO: Refactor: Default value shall moved to here
-
-        # Check the list
-        for element in analyze_list:
-            assert "name" in element.keys()
-            assert "config" in element.keys()
-            assert "checker" in element.keys()
-
-        # Execute command
-        for element in analyze_list:
             # Rewrite file
-            if self.config.CONFIG_CORRECTION_ENABLED:
+            if self.config['Correction enabled']:
                 self.__update_new_file()
 
             # Execute
-            if element["config"]:
-                self.debug_print_ok("Run \"{}\" checker".format(element["name"]))
+            if self.config[checker_name]:  # This is the config value
+                self.debug_print_ok("Run \"{}\" checker".format(checker_name))
                 try:
-                    element["checker"]()
+                    checker_dict["checker"](self)
                 except Exception as e:
                     print("ERROR! Exception: {}".format(str(e)))
                     raise
 
             # Rewrite file
-            if self.config.CONFIG_CORRECTION_ENABLED:
+            if self.config['Correction enabled']:
                 self.update_changed_file()
 
     def add_issue(self, line_number, issue_text):
@@ -335,6 +259,9 @@ class FileAnalysis():
         for issue in self.__issues:
             issue.print_issue()
 
+    def get_issues(self):
+        return [issue.get_issue_in_list() for issue in self.__issues]
+
     def get_text_of_issues(self):
         text = ""
         for issue in self.__issues:
@@ -344,13 +271,16 @@ class FileAnalysis():
     # ----------------------------------------------------
 
     def debug_print_ok(self, line):
-        if self.config.debug_enabled:
+        if self.config['debug enabled']:
             print(line)
 
     # ----------------------------------------------------
 
     def debug_get_new_file(self):
         return self.__new_file_string
+
+    def debug_set_correctize_enabled(self):
+        self.config['Correction enabled'] = True
 
     # ----------------------------------------------------
 
@@ -365,8 +295,8 @@ class FileAnalysis():
                     # TODO Debug..
                 if char > 127:
                     self.add_issue(i, "There is a non-ASCII character!")
-                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
-                        self.add_issue(0, "Not {} encoded".format(self.config.CONFIG_ENCODE))
+                    if self.config['Until first error']:
+                        self.add_issue(0, "Not {} encoded".format(self.config['ENCODE']))
                         # TODO: Change the immediately return code
                         return False
                     else:
@@ -375,31 +305,60 @@ class FileAnalysis():
 
     def check_newline(self):
         # Check every line has good newline? (and the last line too)
-        result = True
+        is_ok = True
         for i, line in self.__file_content_enumerated_list:
             # Get last characters
-            last_chars = line[-len(self.config.CONFIG_NEWLINE_CHARS) : ]
-            if last_chars != self.config.CONFIG_NEWLINE_CHARS:
+            last_chars = line[-len(self.config['Newline chars']) : ]
+            if last_chars != self.config['Newline chars']:
                 self.add_issue(i, "There is a wrong newline in the file!")
-                if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                if self.config['Until first error']:
                     return False
                 else:
-                    result = False
-        return result
+                    is_ok = False
+        if not is_ok and self.config['Correction enabled']:
+            print('Correctize the newline(s)')
+            # TODO: Due the enumerates, it shall be restarted?
+            self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
+            self.correct_newline()
 
+        return is_ok
+
+
+    # TODO: Can be add as new checker / correctizer, but not is can be called from check_newline(from the checker version)
     def correct_newline(self):
-        # TODO: Implement it. Shall rewrite the file, or only replace?
-        pass
+        new_file_list = []
+        is_changed = False
+        for i, line in self.__file_content_enumerated_list:
+            # Get last characters
+            last_chars = line[-len(self.config['Newline chars']) : ]
+            if last_chars != self.config['Newline chars']:
+                is_changed = True
+                if len(self.config['Newline chars']) == 1:
+                    line = line[:-1] + self.config['Newline chars']
+                elif len(self.config['Newline chars']) == 2:
+                    if line[-2] not in self.config['Newline chars']:
+                        # E.g. Only '\n' instead of '\r\n'
+                        line = line[:-1] + self.config['Newline chars']
+                    else:
+                        # Same newline char numbers
+                        line = line[:-2] + self.config['Newline chars']
+                else:
+                    raise Exception('Required Newline chars is not supported!')
+            new_file_list.append(line)
+        new_file = ''.join(new_file_list)
+        self.__new_file_string = new_file
+        return self.__new_file_string
+
 
     def check_tabs(self):
 
-        if not self.config.CONFIG_CORRECTION_ENABLED:
+        if not self.config['Correction enabled']:
             # Only checker, do not correct
             result = True
             for i, line in self.__file_content_enumerated_list:
                 if "\t" in line:
                     self.add_issue(i, "There is a tabulator in the file!")
-                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                    if self.config['Until first error']:
                         return False
                     else:
                         result = False
@@ -411,7 +370,7 @@ class FileAnalysis():
             result = True
             # TODO: Change to line replacer solution?
             for i, line in self.__file_content_enumerated_list:
-                new_line = line.replace("\t", " " * self.config.CONFIG_TAB_SPACE_SIZE)
+                new_line = line.replace("\t", " " * self.config['Tab space size'])
                 if new_line != line:
                     self.add_issue(i, "Replaced tabulator(s) in the file!")
                     result = False
@@ -420,66 +379,53 @@ class FileAnalysis():
 
             return result
 
-            # replace spaces --> tab, but only in leading --> It is indent problem
-            # TODO: Delete
-            """
-            if mode == 2:
-                new_file = ""
-                previous_line_tabs = []
-                for i, line in enumerate(self.__file_content_string_list):
-                    # read line char by char
-                    column = 0
-                    new_line = ""
-                    for j in range(0, len(line)):
-
-                        after_tab = False
-                        while line[j] == "\t":
-                            new_line += ' ' * self.config.CONFIG_TAB_SPACE_SIZE
-                            column += self.config.CONFIG_TAB_SPACE_SIZE
-                            j += 1
-                            after_tab = True
-                        # When we here, we are after the tab
-                        if after_tab:
-                            if j != len(line):
-                                # Check the column
-                                previous_line_tabs.append(j-1)
-                            else:
-                                # End of line
-                                break
-
-
-                    # Save new_line
-                    new_file += new_line + self.config.CONFIG_NEWLINE_CHARS
-            """
-
     def check_trailing_whitespace(self):
-        result = True
+        is_ok = True
         for i, line in self.__file_content_enumerated_list:
             # Strip newline characters
-            #line = line.rstrip(self.config.CONFIG_NEWLINE_CHARS)
-            while len(line) > 0 and line[-1] in self.config.CONFIG_NEWLINE_CHARS:
+            #line = line.rstrip(self.config['Newline chars'])
+            while len(line) > 0 and line[-1] in self.config['Newline chars']:
                 line = line[0:-1]
             if line != line.rstrip(" \t"):
                 # Now, if "blabla " will not same with "blabla", it has trailing whitespace
                 self.add_issue(i+1, "There is trailing whitespace!")  # +1 from starting line from 1.
-                if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                if self.config['Until first error']:
                     return False
                 else:
-                    result = False
-        return result
+                    is_ok = False
+        if not is_ok and self.config['Correction enabled']:
+            print('Trailing whitespace correction started')
+            # TODO: "restart" file
+            self.__file_content_enumerated_list = enumerate(self.__file_content_string_list)
+            self.correct_trailing_whitespace()
 
-    # TODO: Add remove trailing whitespace
+        return is_ok
+
+    # TODO: Can be add as new checker / correctizer, but not is can be called from check_newline(from the check_trailing_whitespace)
+    def correct_trailing_whitespace(self):
+        new_file_list = []
+        for i, line in self.__file_content_enumerated_list:
+            # Get last characters
+            while len(line) > 0 and line[-1] in self.config['Newline chars']:
+                line = line[0:-1]
+            if line != line.rstrip(" \t"):
+                # trailing whitespaces are here
+                line = line.rstrip(" \t")
+            new_file_list.append(line + self.config['Newline chars'])
+        new_file = ''.join(new_file_list)
+        self.__new_file_string = new_file
+        return self.__new_file_string
 
     def check_indent(self):
         result = True
         for i, line in self.__file_content_enumerated_list:
-            if self.config.CONFIG_TABS_ENABLED:
+            if self.config['Tabs enabled']:
                 # Indent with tabs
                 line_free_tab = line.lstrip('\t')
                 # TODO: Think on C: '/*'.. and '*' problem
                 if line_free_tab != line_free_tab.lstrip(' '):
                     self.add_issue(i+1, "Indent is wrong! (Space after tab)")  # +1 from starting line from 1.
-                    if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                    if self.config['Until first error']:
                         return False
                     else:
                         result = False
@@ -494,9 +440,9 @@ class FileAnalysis():
                     pass
                 else:
                     length_of_leading_spaces = len(line) - len(stripped_line)
-                    if (length_of_leading_spaces % self.config.CONFIG_INDENT_SPACE_NUM) != 0:
+                    if (length_of_leading_spaces % self.config['Indent space num']) != 0:
                         self.add_issue(i+1, "Indent is wrong! (Wrong number of spaces)")  # +1 from starting line from 1.
-                        if self.config.CONFIG_UNTIL_FIRST_ERROR:
+                        if self.config['Until first error']:
                             return False
                         else:
                             result = False
@@ -526,6 +472,7 @@ class FileAnalysis():
         # good_header_regex = r'\/\*.*\s*\* *(?P<filename>[\w.]*).*\s*\* *Created on:\s*(?P<created_date>[\d\-]*).*\s*\* *.*\s*\* *.*\s*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)\s*\*\/'
 
         header_regex = r'\/\*[^\*]*\* *(?P<filename>[\w.]*)[^\*]*\* *Created on: *(?P<created_date>[\d\-]*)[^\*]*\* [^\*]*\*[^\*]*\* *Function:\s*(?P<function>[\w\d.\- ]*).*\s*\* *Target:\s*(?P<target>[\w\d]*)[^*]*\*'
+        # TODO: Put regex101 link to here
 
         header_regex_compiled = re.compile(header_regex, RegexFlag.MULTILINE)
         # good_header_regex_compiled = re.compile(good_header_regex, RegexFlag.MULTILINE)
@@ -568,14 +515,14 @@ class FileAnalysis():
                 " *    Target:       {target}",
                 " */"
             ]
-            new_header = ''.join((line + self.config.CONFIG_NEWLINE_CHARS) for line in new_header_format)
-            new_header = new_header.rstrip(self.config.CONFIG_NEWLINE_CHARS)  # delete last new chars
+            new_header = ''.join((line + self.config['Newline chars']) for line in new_header_format)
+            new_header = new_header.rstrip(self.config['Newline chars'])  # delete last new chars
 
             new_header = new_header.format(
                 filename=result.group("filename"),
                 created_date=result.group("created_date"),
-                creator=self.config.CONFIG_CREATOR,
-                email=self.config.CONFIG_E_MAIL,
+                creator=self.config['Creator'],
+                email=self.config['E-mail'],
                 function=result.group("function"),
                 target=result.group("target")
                 )
@@ -622,11 +569,11 @@ class FileAnalysis():
             for i, line in enumerate(self.__file_content_string_list):
                 # new_line = line
                 if not expected_guard1_ok and "#ifndef" in line:
-                    if line == expected_guard1 + self.config.CONFIG_NEWLINE_CHARS:
+                    if line == expected_guard1 + self.config['Newline chars']:
                         self.debug_print_ok("Guard1 was okay")
                     else:
                         # Replace
-                        new_file = new_file.replace(line, expected_guard1 + self.config.CONFIG_NEWLINE_CHARS)
+                        new_file = new_file.replace(line, expected_guard1 + self.config['Newline chars'])
                         guard_changed = True
                         self.add_issue(i, "Header guard was wrong - line:\"{}\"".format(line))
 
@@ -634,11 +581,11 @@ class FileAnalysis():
                     continue
 
                 if not expected_guard2_ok and "#define" in line:
-                    if line == expected_guard2 + self.config.CONFIG_NEWLINE_CHARS:
+                    if line == expected_guard2 + self.config['Newline chars']:
                         self.debug_print_ok("Guard2 was okay")
                     else:
                         # Replace
-                        new_file = new_file.replace(line, expected_guard2 + self.config.CONFIG_NEWLINE_CHARS)
+                        new_file = new_file.replace(line, expected_guard2 + self.config['Newline chars'])
                         guard_changed = True
                         self.add_issue(i, "Header guard was wrong - line:\"{}\"".format(line))
 
@@ -652,11 +599,11 @@ class FileAnalysis():
             # Finished, check the last line #endif
             if saved_last_line_index >= 0:
                 line = self.__file_content_string_list[saved_last_line_index]
-                if line == expected_guard3 + self.config.CONFIG_NEWLINE_CHARS:
+                if line == expected_guard3 + self.config['Newline chars']:
                     self.debug_print_ok("Guard3 was okay")
                 else:
                     # Replace
-                    new_file = new_file.replace(line, expected_guard3 + self.config.CONFIG_NEWLINE_CHARS)
+                    new_file = new_file.replace(line, expected_guard3 + self.config['Newline chars'])
                     guard_changed = True
 
                 expected_guard3_ok = True
@@ -737,7 +684,7 @@ class FileAnalysis():
                                       "   to\n"
                                       "   \"{}\"\n".format(line, new_line))
                 # Found, not full line: so wrong line
-            # else, dont match. anything, so it is not comment line
+            # else: does not match. anything, so it is not comment line
         if is_changed:
             self.__new_file_string = "".join(self.__file_content_string_list)
 
@@ -905,22 +852,18 @@ class FileAnalysis():
         # self.__new_file_string = regex_text_from.sub(r'\1CONFIG_MODULE_', self.__file_content_full_string)
         pass
 
-    def correctize_EOF(self):
-        last_chars = self.__file_content_full_string[-len(self.config.CONFIG_NEWLINE_CHARS):]
-        if last_chars != self.config.CONFIG_NEWLINE_CHARS:
+    def checker_EOF(self):
+        last_chars = self.__file_content_full_string[-len(self.config['Newline chars']):]
+        if last_chars != self.config['Newline chars']:
             self.add_issue(0, "There is no correct EOF!")
-            if self.config.CONFIG_CORRECTION_ENABLED:
-                self.__new_file_string = self.__file_content_full_string + self.config.CONFIG_NEWLINE_CHARS
+            if self.config['Correction enabled']:
+                self.__new_file_string = self.__file_content_full_string + self.config['Newline chars']
             return False
 
         return True
 
 
-    def type_checker(self):
-        # TODO: Add type checker
-        pass
-
-class Statistics():
+class Statistics:
     code_line_count = 0
 
     def __init__(self):
@@ -932,75 +875,232 @@ class Statistics():
         self.code_line_count += count
 
 
-def statistics_prepare():
-    if CONFIG_STATISTICS_ENABLED:
-        global STATISTICS_DATA
-        STATISTICS_DATA = Statistics()
+class StatisticsHandler:
 
+    def __init__(self, is_enabled=True):
+        self.statistics_data = Statistics()
+        self.is_enabled = is_enabled
 
-def statistics_inc_code_line(count=1):
-    if CONFIG_STATISTICS_ENABLED:
-        STATISTICS_DATA.inc_code(count)
+    def statistics_inc_code_line(self, count=1):
+        self.statistics_data.inc_code(count)
 
-
-def statistics_file_code_line(count=0, filename=""):
-    if CONFIG_STATISTICS_ENABLED:
-        STATISTICS_DATA.inc_code(count)
+    def statistics_file_code_line(self, count=0, filename=""):
+        self.statistics_data.inc_code(count)
         print("File: \"{}\" has {} line codes".format(filename, count))
 
+    def statistics_finish(self):
+        print("Project has {} line codes".format(self.statistics_data.code_line_count))
+        return self.statistics_data
 
-def statistics_finish():
-    if CONFIG_STATISTICS_ENABLED:
-        print("Project has {} line codes".format(STATISTICS_DATA.code_line_count))
 
+def source_code_checker(source_paths=['.'], file_types='*.[c|h]',
+                        config_file_path=CONFIG_FILE_DEFAULT_NAME, recursive=True):
 
-def run_checker(dir_path=".", dir_relative=True, file_types="*.[c|h]", checks=[], change_mode=False, recursive=True):
-    # TODO: Delete dir_relative
-    # TODO: Implement checks
-    # TODO: Implement change_mode
-
-    print("Directory: {}\n" \
+    print("Directories: {}\n"
           "File types: {}".format(
-              dir_path, file_types))
+              source_paths, file_types))
 
     # Walk directories
     # glob use:<path>\**\*.c, recursive=True for subdirectory discovery
-    pattern = dir_path + os.sep + file_types
-    file_list = glob.glob(pattern, recursive=recursive)
+    if isinstance(source_paths, list):
+        file_glob_list = [source_path + os.sep + file_types for source_path in source_paths]
+    elif isinstance(source_paths, str):
+        file_glob_list = [source_paths + os.sep + file_types]
+    else:
+        raise Exception('Wrong source_path type!')
+    file_list = []
+    for file_glob_pattern in file_glob_list:
+        file_list.extend(glob.glob(file_glob_pattern, recursive=recursive))
 
-    statistics_prepare()
+    # Config, settings - once
+    file_analysis = Checker(config_file_path)
+
+    # Statuses
+    statistics = StatisticsHandler(is_enabled=file_analysis.config['Statistics enabled'])
+    all_issues_list = []
 
     # Check files
     for file_path in file_list:
-        file_analysis = FileAnalysis(file_path)
+        file_analysis.load(file_path)
         file_analysis.analyze()
         file_analysis.print_issues()
-        statistics_file_code_line(file_analysis.get_code_lines_count(), file_analysis.get_file_name())
+        all_issues_list.extend(file_analysis.get_issues())
+        statistics.statistics_file_code_line(file_analysis.get_code_lines_count(), file_analysis.get_file_name())
 
-    statistics_finish()
+    statistics_data = statistics.statistics_finish()
 
-    print("Finished")
+    print("Finished analysis")
+
+    return all_issues_list, statistics_data
 
 
-if __name__ == "__main__":
-    # execute only if run as a script
-    # Test:
-    # FileAnalysis(file_path=None)
-    # TODO: Add deeper wrapper for more directories
-    #global CONFIG_FILE_NAME
-    # Check 'PIPELINE_WORKSPACE' ENV
+class CheckerConfig:
+
+    config = {
+        "ENCODE": {
+            "default_value": "utf8"
+        },
+        "ASCII checker": {
+            "checker": Checker.check_ASCII,
+            "default_value": False,
+        },
+        "EOF checker": {  # It is important to EOF checker shall be upper than newline checker due the missing EOF is newline issue also
+            "checker": Checker.checker_EOF,
+            "default_value": True
+        },
+        "Newline chars": {
+            "default_value": "\r\n"
+        },
+        "Newline checker": {
+            "checker": Checker.check_newline,
+            "default_value": True
+        },
+        "Tabs enabled": {
+            "default_value": False
+        },
+        "Tab space size": {
+            "default_value": 4
+        },
+        "Tabs checker": {
+            "checker": Checker.check_tabs,
+            "default_value": False
+        },
+        "Indent space num": {
+            "default_value": 4
+        },
+        "Indent checker": {
+            "checker": Checker.check_indent,
+            "default_value": True
+        },
+        "Trailing whitespace checker": {
+            "checker": Checker.check_trailing_whitespace,
+            "default_value": True
+        },
+        "Header comment checker": {
+            "checker": Checker.correctize_header_comment,
+            "default_value": False
+        },
+        "Include guard checker": {
+            "checker": Checker.correctize_include_guard,
+            "default_value": False
+        },
+        "Doxygen keywords checker": {
+            "checker": Checker.correctize_doxygen_keywords,
+            "default_value": False
+        },
+        "Function description comment": {
+            "checker": Checker.run_refactor_function_description_comment,
+            "default_value": True
+        },
+        "Refactor checker - Comment": {
+            "checker": Checker.run_refactor_comment,
+            "default_value": True
+        },
+        "Refactor checker - Unused argument": {
+            "checker": Checker.run_refactor_unused_argument,
+            "default_value": True
+        },
+        "debug enabled": {
+            "default_value": True
+        },
+        "Creator": {
+            "default_value": "Vizi Gabor"
+        },
+        "E-mail": {
+            "default_value": "vizi.gabor90@gmail.com"
+        },
+        "Until first error": {
+            "default_value": False
+        },
+        "Correction enabled": {
+            "default_value": False
+        },
+        "Statistics enabled": {
+            "default_value": True
+        }
+
+        # XXX: Add here the new checker
+    }
+
+    def __init__(self):
+        # Check the list
+        for key, value in self.config.items():
+            assert "default_value" in value
+            # assert "checker" in element.keys()  # Not mandatory
+
+    def get_config(self):
+        return ConfigHandler.convert_config_to_dict(self.config)
+
+
+def export_issues(issues, csv_file_path=CONFIG_FILE_ISSUE_EXPORT_DEFAULT_NAME):
+    print('Export issues to {}'.format(csv_file_path))
+    with open(csv_file_path, 'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter=',')
+        for row in issues:
+            csv_writer.writerow(row)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='SourceCodeChecker')
+
+    cwd = os.getcwd()
+
+    parser.add_argument('--project-path', required=False, type=str,
+                        default=cwd,
+                        help='path for project root. It should be directory, it can be relative or absolute path\n'
+                             'Default is the cwd')
+
+    parser.add_argument('--is-pipeline', required=False, action='store_true',
+                        default=False,
+                        help='Is it pipeline? It used for default values')
+
+    parser.add_argument('--source-file-path', required=True, type=str,
+                        help='Source(s) file(s) path, what shall be the checker analyzed.\n'
+                             'It shall be relative "path filter" from the project-path.\n'
+                             '  E.g. Scr\\**,Inc\\**')
+
+    parser.add_argument('--file-extension-filter', required=False, type=str,
+                        default=CONFIG_FILE_EXTENSION_DEFAULT_FILTER,
+                        help='File filter in regex format.\n'
+                             '  E.g. [*.c|h]')
+
+    parser.add_argument('--config-file-path', required=False, type=str,
+                        default=CONFIG_FILE_DEFAULT_NAME,
+                        help='Config file path. It shall be relative path from project-path\n'
+                             'Recommended name: scc_config.json')
+
+    parser.add_argument('--export-csv-file-path', required=False, type=str,
+                        default=CONFIG_FILE_ISSUE_EXPORT_DEFAULT_NAME,
+                        help='Export CSV file path where the issues are exported')
+
+    args = parser.parse_args()
+
     is_pipeline = os.getenv("PIPELINE_WORKSPACE")
     if is_pipeline:
-        project_dir = ""
-        print("Run on pipeline: '{}'".format(project_dir))
-    else:
-        project_dir = "..\\..\\AtollicWorkspace\\FastenHomeAut\\"
-        print("Run on local: '{}'".format(project_dir))
+        # Override the argument
+        args.is_pipeline = True
 
-    CONFIG_FILE_NAME = project_dir + "scc_config.json"
-    run_checker(dir_path=project_dir+"Src\\**", dir_relative=True, recursive=True)
-    run_checker(dir_path=project_dir+"Inc\\**", dir_relative=True, recursive=True)
-    run_checker(dir_path=project_dir+"Drivers\\x86\\**", dir_relative=True, recursive=True)
+    if not os.path.isabs(args.project_path):
+        args.project_path = os.path.join(cwd, args.project_path)
+    if not os.path.exists(args.project_path):
+        raise Exception('The point of project-path argument does not exist!')
+    if not os.path.isdir(args.project_path):
+        raise Exception('The project-path argument is not a directory!')
 
-# TODO: Unittest for TAB
-# TODO: Unittest for not tab (indent!)
+    args.config_file_path = os.path.join(args.project_path, args.config_file_path)
+    if not os.path.exists(args.config_file_path):
+        raise Exception('The file as given at config-file-path argument does not exist!')
+
+    source_filter_list = args.source_file_path.split(',')
+    source_list = [os.path.join(args.project_path, item) for item in source_filter_list]
+
+    value_result_list = source_code_checker(source_paths=source_list,
+                                            file_types=args.file_extension_filter,
+                                            config_file_path=args.config_file_path)
+
+    export_issues(value_result_list, args.export_csv_file_path)
+
+
+if __name__ == '__main__':
+    main()
+

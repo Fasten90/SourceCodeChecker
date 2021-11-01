@@ -2,12 +2,12 @@
     "ASCII checker": false,
     "Correction enabled": false,
     "Doxygen keywords checker": false,
-    "Function description comment": true,
+    "Function description comment": false,
     "Header comment checker": false,
     "Include guard checker": false,
     "Creator": "Vizi Gabor",
     "ENCODE": "utf8",
-    "EOF checker": true,
+    "EOF checker": false,
     "E-mail": "vizi.gabor90@gmail.com",
     "Indent checker": false,
     "Indent space num": 4,
@@ -20,6 +20,6 @@
     "Tab space size": 4,
     "Trailing whitespace checker": false,
     "Until first error": false,
-    "debug enabled": true,
-    "Statistics enabled": true
+    "debug enabled": false,
+    "Statistics enabled": false
 }
