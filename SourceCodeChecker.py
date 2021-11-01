@@ -12,8 +12,6 @@ import csv
 
 CONFIG_FILE_DEFAULT_NAME = 'scc_config.json'
 CONFIG_FILE_EXTENSION_DEFAULT_FILTER = '*.[c|h]'
-CONFIG_STATISTICS_ENABLED = True
-STATISTICS_DATA = None
 CONFIG_FILE_ISSUE_EXPORT_DEFAULT_NAME = 'source_code_checker_issues.csv'
 
 
@@ -877,26 +875,22 @@ class Statistics:
         self.code_line_count += count
 
 
-def statistics_prepare():
-    if CONFIG_STATISTICS_ENABLED:
-        global STATISTICS_DATA
-        STATISTICS_DATA = Statistics()
+class StatisticsHandler:
 
+    def __init__(self, is_enabled=True):
+        self.statistics_data = Statistics()
+        self.is_enabled = is_enabled
 
-def statistics_inc_code_line(count=1):
-    if CONFIG_STATISTICS_ENABLED:
-        STATISTICS_DATA.inc_code(count)
+    def statistics_inc_code_line(self, count=1):
+        self.statistics_data.inc_code(count)
 
-
-def statistics_file_code_line(count=0, filename=""):
-    if CONFIG_STATISTICS_ENABLED:
-        STATISTICS_DATA.inc_code(count)
+    def statistics_file_code_line(self, count=0, filename=""):
+        self.statistics_data.inc_code(count)
         print("File: \"{}\" has {} line codes".format(filename, count))
 
-
-def statistics_finish():
-    if CONFIG_STATISTICS_ENABLED:
-        print("Project has {} line codes".format(STATISTICS_DATA.code_line_count))
+    def statistics_finish(self):
+        print("Project has {} line codes".format(self.statistics_data.code_line_count))
+        return self.statistics_data
 
 
 def source_code_checker(source_paths=['.'], file_types='*.[c|h]',
@@ -921,9 +915,8 @@ def source_code_checker(source_paths=['.'], file_types='*.[c|h]',
     # Config, settings - once
     file_analysis = Checker(config_file_path)
 
-    # TODO: Move statistics to config related
-    statistics_prepare()
-
+    # Statuses
+    statistics = StatisticsHandler(is_enabled=file_analysis.config['Statistics enabled'])
     all_issues_list = []
 
     # Check files
@@ -932,13 +925,13 @@ def source_code_checker(source_paths=['.'], file_types='*.[c|h]',
         file_analysis.analyze()
         file_analysis.print_issues()
         all_issues_list.extend(file_analysis.get_issues())
-        statistics_file_code_line(file_analysis.get_code_lines_count(), file_analysis.get_file_name())
+        statistics.statistics_file_code_line(file_analysis.get_code_lines_count(), file_analysis.get_file_name())
 
-    statistics_finish()
+    statistics_data = statistics.statistics_finish()
 
     print("Finished analysis")
 
-    return all_issues_list
+    return all_issues_list, statistics_data
 
 
 class CheckerConfig:

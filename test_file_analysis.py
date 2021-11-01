@@ -185,12 +185,13 @@ http://blabla.com
         test_config_file = 'test/scc_config_test_statistics.json'
 
         test_statistics_file_path = "test" + os.sep + "StatisticsTestProject" + os.sep + "**"
-        SourceCodeChecker.source_code_checker(source_paths=test_statistics_file_path,
-                                              file_types='*.[c|h]',
-                                              config_file_path=test_config_file,
-                                              recursive=True)
+        issues, statistics_data = SourceCodeChecker.source_code_checker(
+                                        source_paths=test_statistics_file_path,
+                                        file_types='*.[c|h]',
+                                        config_file_path=test_config_file,
+                                        recursive=True)
         # 11 + 21 line count in the file
-        self.assertEqual(32, SourceCodeChecker.STATISTICS_DATA.code_line_count)
+        self.assertEqual(32, statistics_data.code_line_count)
 
 
     def test_function_description(self):
