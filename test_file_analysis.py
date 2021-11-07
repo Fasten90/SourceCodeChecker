@@ -337,6 +337,17 @@ void do_not_touch();
         self.assertTrue(res)
 
 
+    def test_check_indent_DontCare(self):
+        test_code = """  /* Comment can be with wrong indent */"""
+        file_analysis = SourceCodeChecker.Checker()
+        file_analysis.load(file_path=None, test_text=test_code)
+
+        res = file_analysis.check_indent()
+
+        self.assertTrue(res)
+
+
+
     #def test_correctize(self):
     #    file_analysis = SourceCodeChecker.Checker()
     #    file_analysis.load(file_path=None, test_text=test_code)

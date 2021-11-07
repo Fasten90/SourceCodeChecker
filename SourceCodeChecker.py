@@ -434,12 +434,19 @@ class Checker:
                 stripped_line = line.lstrip(' ')
                 # C special:
                 # TODO: Check it is in multiline coment?
+                length_of_leading_spaces = len(line) - len(stripped_line)
                 if stripped_line.startswith('/*') or stripped_line.startswith('*'):
                     # Comment line, skip
                     # result = True, but do not overwrite
                     pass
+                elif stripped_line.startswith('#'):  # define
+                    # define line
+                    if (length_of_leading_spaces % (self.config['Indent space num']/2)) != 0:
+                        if self.config['Until first error']:
+                            return False
+                        else:
+                            result = False
                 else:
-                    length_of_leading_spaces = len(line) - len(stripped_line)
                     if (length_of_leading_spaces % self.config['Indent space num']) != 0:
                         self.add_issue(i+1, "Indent is wrong! (Wrong number of spaces)")  # +1 from starting line from 1.
                         if self.config['Until first error']:
