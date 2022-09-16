@@ -660,7 +660,7 @@ class Checker:
         # Idea:
         # myRe = re.compile(r"(myFunc\(.+?\,.+?\,)(.+?)(\,.+?\,.+?\,.+?\,.+?\))")
         # print myRe.sub(r'\1"noversion"\3', val)
-        # \1 means: 1. group
+        # 1 means: 1. group
 
         # "// comment" --> /* comment */
         # But do not change: "///<"
