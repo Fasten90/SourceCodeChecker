@@ -667,11 +667,11 @@ class Checker:
         # And finished with //
         # Tested with: https://regex101.com/
         #                                 html - http*:*//
-        #                                 ˇ
+        #                                 ^
         #                                      //  normal line comment
-        #                                      ˇ
+        #                                      ^
         #                                              ///< or //* - do not catch
-        #                                              ˇ
+        #                                              ^
 
         # TODO: Delete
         #regex_text_full_line = re.compile(r"([^:])+\/\/(([^\/\<\*])[^\r\n]+)")
